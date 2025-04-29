@@ -12,3 +12,4 @@ const Hero = ({title}) => {
 }
  
 export default Hero;
+
