@@ -1,48 +1,31 @@
 <?php
-session_start();
-
-// If already logged in, redirect to admin panel
-if (isset($_SESSION['admin_logged_in'])) {
-    header('Location: index.php');
-    exit;
-}
-
-require_once '../config.php';
-
+require_once __DIR__ . '/../config.php';
+securitySession();
+if (!empty($_SESSION['admin_logged_in'])) { securityRequireAdmin(false, true); header('Location: index.php'); exit; }
 $error = '';
-
-// Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-    
-    if ($username && $password) {
+    securityCheckCsrf($_POST['csrf_token'] ?? '');
+    $username = is_string($_POST['username'] ?? null) ? trim($_POST['username']) : '';
+    $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+    securityRate('login-ip:' . ($_SERVER['REMOTE_ADDR'] ?? ''), 30, 900);
+    securityRate('login-account:' . strtolower(substr($username, 0, 100)), 10, 900);
+    $error = 'Invalid username or password';
+    if ($username !== '' && strlen($username) <= 50 && strlen($password) <= 1024) {
         try {
-            $stmt = $pdo->prepare("SELECT * FROM admin_users WHERE username = ?");
+            $stmt = $pdo->prepare('SELECT * FROM admin_users WHERE username = ?');
             $stmt->execute([$username]);
             $user = $stmt->fetch();
-            
-            if ($user && password_verify($password, $user['password'])) {
-                // Login successful
+            $valid = password_verify($password, $user['password'] ?? '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.');
+            if ($user && $valid) {
                 session_regenerate_id(true);
-                $_SESSION['admin_logged_in'] = true;
-                $_SESSION['admin_username'] = $user['username'];
-                $_SESSION['admin_id'] = $user['id'];
-                
-                // Update last login
-                $stmt = $pdo->prepare("UPDATE admin_users SET last_login = NOW() WHERE id = ?");
+                $_SESSION = ['admin_logged_in' => true, 'admin_username' => $user['username'], 'admin_id' => $user['id'],
+                    'authenticated_at' => time(), 'last_activity' => time(), 'password_version' => hash('sha256', $user['password'])];
+                securityCsrf();
+                $stmt = $pdo->prepare('UPDATE admin_users SET last_login = NOW() WHERE id = ?');
                 $stmt->execute([$user['id']]);
-                
-                header('Location: index.php');
-                exit;
-            } else {
-                $error = 'Invalid username or password';
+                header('Location: index.php'); exit;
             }
-        } catch (PDOException $e) {
-            $error = 'Database error: ' . $e->getMessage();
-        }
-    } else {
-        $error = 'Please enter username and password';
+        } catch (PDOException $e) { error_log('Admin login database failure'); $error = 'Login unavailable. Try again later.'; }
     }
 }
 ?>
@@ -124,6 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
         
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(securityCsrf(), ENT_QUOTES, 'UTF-8') ?>">
             <div class="mb-3">
                 <label for="username" class="form-label">Username</label>
                 <input type="text" class="form-control" id="username" name="username" required autofocus>

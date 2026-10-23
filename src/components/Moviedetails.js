@@ -1,3 +1,5 @@
+import { safeExternalUrl } from '../utils/safeExternalUrl';
+import { API_BASE_URL } from '../utils/apiConfig';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
@@ -57,11 +59,11 @@ const MovieDetails = () => {
 
         // Check if movie is public domain via PHP API
         try {
-          const checkResponse = await fetch(`http://localhost:8000/api/check.php?tmdb_id=${id}`, { signal: controller.signal });
+          const checkResponse = await fetch(`${API_BASE_URL}/check.php?tmdb_id=${id}`, { signal: controller.signal });
           const checkData = await checkResponse.json();
           if (!active) return;
           
-          if (checkData.success && checkData.is_public_domain) {
+          if (checkData.success && checkData.is_public_domain && safeExternalUrl(checkData.data?.download_url)) {
             setPublicDomainData(checkData.data);
           }
         } catch (error) {

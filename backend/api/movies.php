@@ -14,20 +14,13 @@
 
 require_once '../config.php';
 
-// Set headers for CORS
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-
-// Handle preflight requests
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
+securityCors('GET, POST, PUT, DELETE, OPTIONS');
 
 // Get request method
 $method = $_SERVER['REQUEST_METHOD'];
+if (in_array($method, ['POST', 'PUT', 'DELETE'], true)) securityRequireAdmin(true);
 
+foreach (['id', 'tmdb_id'] as $key) if (isset($_GET[$key]) && (!is_string($_GET[$key]) || !preg_match('/^[1-9][0-9]{0,9}$/D', $_GET[$key]) || (int)$_GET[$key] > 2147483647)) sendErrorResponse('Invalid ID', 422);
 // Get query parameters
 $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
 $tmdb_id = isset($_GET['tmdb_id']) ? (int)$_GET['tmdb_id'] : null;
@@ -64,7 +57,8 @@ if ($method === 'GET') {
             sendSuccessResponse($movies);
         }
     } catch (PDOException $e) {
-        sendErrorResponse('Database error: ' . $e->getMessage());
+        error_log('API database failure: ' . $e->getMessage());
+        sendErrorResponse('Database operation unavailable.', 503);
     }
 }
 
@@ -72,7 +66,8 @@ if ($method === 'GET') {
 elseif ($method === 'POST') {
     try {
         // Get JSON input
-        $input = json_decode(file_get_contents('php://input'), true);
+        $input = securityReadJson();
+        securityValidateMovie($input);
         
         // Validate required fields
         if (!isset($input['tmdb_id']) || !isset($input['title']) || !isset($input['download_url'])) {
@@ -102,7 +97,8 @@ elseif ($method === 'POST') {
         
         sendSuccessResponse(['id' => $pdo->lastInsertId()], 'Movie added successfully');
     } catch (PDOException $e) {
-        sendErrorResponse('Database error: ' . $e->getMessage());
+        error_log('API database failure: ' . $e->getMessage());
+        sendErrorResponse('Database operation unavailable.', 503);
     }
 }
 
@@ -114,7 +110,8 @@ elseif ($method === 'PUT') {
         }
         
         // Get JSON input
-        $input = json_decode(file_get_contents('php://input'), true);
+        $input = securityReadJson();
+        securityValidateMovie($input);
         
         // Build update query dynamically
         $fields = [];
@@ -155,7 +152,8 @@ elseif ($method === 'PUT') {
         
         sendSuccessResponse(null, 'Movie updated successfully');
     } catch (PDOException $e) {
-        sendErrorResponse('Database error: ' . $e->getMessage());
+        error_log('API database failure: ' . $e->getMessage());
+        sendErrorResponse('Database operation unavailable.', 503);
     }
 }
 
@@ -175,7 +173,8 @@ elseif ($method === 'DELETE') {
         
         sendSuccessResponse(null, 'Movie deleted successfully');
     } catch (PDOException $e) {
-        sendErrorResponse('Database error: ' . $e->getMessage());
+        error_log('API database failure: ' . $e->getMessage());
+        sendErrorResponse('Database operation unavailable.', 503);
     }
 }
 

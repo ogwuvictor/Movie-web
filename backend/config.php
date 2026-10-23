@@ -5,12 +5,14 @@
  * Database connection settings for the public domain movies system.
  */
 
-// Database Configuration
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'cinehub_db');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+require_once __DIR__ . '/security.php';
+// Local defaults are never accepted for a remotely accessed deployment.
+define('DB_HOST', getenv('CINEHUB_DB_HOST') ?: 'localhost');
+define('DB_NAME', getenv('CINEHUB_DB_NAME') ?: 'cinehub_db');
+define('DB_USER', getenv('CINEHUB_DB_USER') ?: 'root');
+define('DB_PASS', getenv('CINEHUB_DB_PASS') ?: '');
 define('DB_CHARSET', 'utf8mb4');
+if (!securityIsLocal() && (DB_USER === 'root' || DB_PASS === '')) securityJson(['error' => 'Production database credentials must be configured.'], 503);
 
 // Create database connection
 try {
@@ -23,7 +25,8 @@ try {
     
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 } catch (PDOException $e) {
-    die("Database connection failed: " . $e->getMessage());
+    error_log('Database connection failed: ' . $e->getMessage());
+    securityJson(['error' => 'Database unavailable.'], 503);
 }
 
 // Helper function for JSON responses

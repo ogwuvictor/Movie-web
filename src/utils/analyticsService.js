@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-const API_BASE_URL = 'http://localhost:8000/api';
+import { API_BASE_URL } from './apiConfig';
 
 // Generate or retrieve session ID
 let sessionId = sessionStorage.getItem('analytics_session_id');

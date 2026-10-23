@@ -11,7 +11,7 @@ try {
     $stmt->execute([$username, password_hash($password, PASSWORD_DEFAULT), $username . '@example.invalid']);
     $id = $pdo->lastInsertId();
     $environment = array_merge(getenv(), ['CINEHUB_ADMIN_USER' => $username, 'CINEHUB_ADMIN_PASSWORD' => $password]);
-    $process = proc_open(['node', __DIR__ . '/verify-admin-catalog-browser.cjs'], [0 => STDIN, 1 => STDOUT, 2 => STDERR], $pipes, dirname(__DIR__), $environment);
+    $process = proc_open(['node', __DIR__ . (getenv('CINEHUB_SECURITY_QA') === '1' ? '/verify-security-browser.cjs' : '/verify-admin-catalog-browser.cjs')], [0 => STDIN, 1 => STDOUT, 2 => STDERR], $pipes, dirname(__DIR__), $environment);
     if (!is_resource($process)) throw new RuntimeException('Cannot launch browser QA.');
     $exitCode = proc_close($process);
 } finally {

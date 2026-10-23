@@ -1,53 +1,21 @@
 <?php
-session_start();
-
-// Check if user is logged in
-if (!isset($_SESSION['admin_logged_in'])) {
-    sendErrorResponse('Not authenticated', 401);
-}
-
-require_once '../config.php';
-
-// Get JSON input
-$input = json_decode(file_get_contents('php://input'), true);
-
+require_once __DIR__ . '/../config.php';
+securityRequireAdmin(true);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') securityJson(['error' => 'Method not allowed.'], 405);
+securityRate('password:' . $_SESSION['admin_id'], 10, 900);
+$input = securityReadJson();
 $currentPassword = $input['current_password'] ?? '';
 $newPassword = $input['new_password'] ?? '';
-
-// Validation
-if (!$currentPassword || !$newPassword) {
-    sendErrorResponse('Current password and new password are required');
-}
-
-if (strlen($newPassword) < 6) {
-    sendErrorResponse('New password must be at least 6 characters');
-}
-
+if (!is_string($currentPassword) || !is_string($newPassword) || strlen($currentPassword) > 1024 || !preg_match('/^.{12,72}$/usD', $newPassword) || strlen($newPassword) > 72 || str_contains($newPassword, "\0")) sendErrorResponse('Use at least 12 characters and at most 72 UTF-8 bytes.', 422);
 try {
-    // Get current user
-    $username = $_SESSION['admin_username'];
-    $stmt = $pdo->prepare("SELECT * FROM admin_users WHERE username = ?");
-    $stmt->execute([$username]);
+    $stmt = $pdo->prepare('SELECT password FROM admin_users WHERE id = ?');
+    $stmt->execute([$_SESSION['admin_id']]);
     $user = $stmt->fetch();
-
-    if (!$user) {
-        sendErrorResponse('User not found');
-    }
-
-    // Verify current password
-    if (!password_verify($currentPassword, $user['password'])) {
-        sendErrorResponse('Current password is incorrect');
-    }
-
-    // Hash new password
-    $newPasswordHash = password_hash($newPassword, PASSWORD_DEFAULT);
-
-    // Update password
-    $stmt = $pdo->prepare("UPDATE admin_users SET password = ? WHERE id = ?");
-    $stmt->execute([$newPasswordHash, $user['id']]);
-
+    if (!$user || !password_verify($currentPassword, $user['password'])) sendErrorResponse('Current password is incorrect', 403);
+    $hash = password_hash($newPassword, PASSWORD_DEFAULT);
+    $stmt = $pdo->prepare('UPDATE admin_users SET password = ? WHERE id = ?');
+    $stmt->execute([$hash, $_SESSION['admin_id']]);
+    session_regenerate_id(true);
+    $_SESSION['password_version'] = hash('sha256', $hash);
     sendSuccessResponse(null, 'Password changed successfully');
-
-} catch (PDOException $e) {
-    sendErrorResponse('Database error: ' . $e->getMessage());
-}
+} catch (PDOException $e) { error_log('Password update database failure'); sendErrorResponse('Password update unavailable.', 503); }

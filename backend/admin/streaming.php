@@ -1,14 +1,14 @@
 <?php
-session_start();
-if (empty($_SESSION['admin_logged_in'])) { header('Location: login.php'); exit; }
-if (empty($_SESSION['catalog_csrf'])) $_SESSION['catalog_csrf'] = bin2hex(random_bytes(32));
+require_once __DIR__ . '/../config.php';
+securityRequireAdmin(false, true);
+$csrf = securityCsrf();
 ?>
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="<?= htmlspecialchars($_SESSION['catalog_csrf'], ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="csrf-token" content="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
     <title>Streaming Availability | CineHub Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -16,7 +16,7 @@ if (empty($_SESSION['catalog_csrf'])) $_SESSION['catalog_csrf'] = bin2hex(random
 <nav class="navbar navbar-expand bg-white border-bottom">
     <div class="container flex-wrap gap-2">
         <a class="navbar-brand fw-bold text-primary" href="index.php">CineHub Admin</a>
-        <div class="d-flex gap-3"><a href="index.php">Dashboard</a><a href="logout.php">Logout</a></div>
+        <div class="d-flex gap-3"><a href="index.php">Dashboard</a><form method="post" action="logout.php" class="d-inline"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>"><button type="submit"  style="background:none;border:0;padding:0;color:var(--bs-link-color);text-decoration:underline">Logout</button></form></div>
     </div>
 </nav>
 <main class="container py-4">

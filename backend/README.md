@@ -1,5 +1,7 @@
 # CineHub Backend - Movie Streaming Platform
 
+Security configuration, hosting requirements and remaining risks are documented in [SECURITY.md](../SECURITY.md). Use the router-based startup command below; do not expose a bare PHP development server.
+
 ## Local dashboard and streaming catalog
 
 From the project root in PowerShell, run `./scripts/start-backend.ps1`, then open **http://127.0.0.1:8000/admin/** and use your existing admin credentials. This starts a loopback-only PHP development server with a writable temporary session directory. The configured MySQL database must already be running.
@@ -463,20 +465,20 @@ mysql -u root -p < database.sql
 
 ### 3. Configure Database
 
-Edit `backend/config.php`:
+Set server environment variables (do not commit credentials):
 
-```php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'cinehub_db');
-define('DB_USER', 'your_username');
-define('DB_PASS', 'your_password');
+```text
+CINEHUB_DB_HOST=localhost
+CINEHUB_DB_NAME=cinehub_db
+CINEHUB_DB_USER=your_dedicated_database_user
+CINEHUB_DB_PASS=<set securely in the server environment>
 ```
 
 ### 4. Start PHP Server
 
 ```bash
 # From the backend directory
-php -S localhost:8000
+powershell -File ../scripts/start-backend.ps1
 ```
 
 Or configure your web server to point to the backend directory.
@@ -484,16 +486,10 @@ Or configure your web server to point to the backend directory.
 ### 5. Access Admin Panel
 
 - URL: `http://localhost:8000/admin/`
-- Default credentials:
-  - Username: `admin`
-  - Password: `admin123`
+- Use your existing administrator credentials. This security update does not reset them.
 
 **⚠️ IMPORTANT: Change the default password in production!**
 
 ### 6. Update React API URL
 
-In `src/components/Moviedetails.js`, update the API URL:
-
-```javascript
-const checkResponse = await fetch(`http://localhost:8000/api/check.php?tmdb_id=${id}`);
-```
+The shared `src/utils/apiConfig.js` uses `/api` in production and the loopback backend in development. Set `REACT_APP_API_BASE_URL` to an HTTPS API origin/path only when using a separate backend. Do not put private credentials in frontend environment variables.

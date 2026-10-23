@@ -1,14 +1,7 @@
 <?php
-session_start();
-
-// Simple authentication check
-if (!isset($_SESSION['admin_logged_in'])) {
-    header('Location: login.php');
-    exit;
-}
-
-require_once '../config.php';
-
+require_once __DIR__ . '/../config.php';
+securityRequireAdmin(false, true);
+$csrf = securityCsrf();
 // Fetch all movies
 $stmt = $pdo->query("SELECT * FROM public_domain_movies ORDER BY year DESC, title ASC");
 $movies = $stmt->fetchAll();
@@ -18,6 +11,7 @@ $movies = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
     <title>CineHub Admin - Public Domain Movies</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -122,15 +116,15 @@ $movies = $stmt->fetchAll();
                 <i class="fas fa-film me-2"></i>CineHub Admin
             </a>
             <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="../index.php" target="_blank">
+                <a class="nav-link" href="../index.php" target="_blank" rel="noopener noreferrer">
                     <i class="fas fa-external-link-alt me-1"></i> View Site
                 </a>
                 <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
                     <i class="fas fa-key me-1"></i> Change Password
                 </a>
-                <a class="nav-link" href="logout.php">
+                <form method="post" action="logout.php" class="d-inline"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>"><button type="submit" class="nav-link"  style="background:none;border:0">
                     <i class="fas fa-sign-out-alt me-1"></i> Logout
-                </a>
+                </button></form>
             </div>
         </div>
     </nav>
@@ -140,22 +134,22 @@ $movies = $stmt->fetchAll();
             <ul class="nav nav-tabs">
                 <li class="nav-item"><a class="nav-link" href="streaming.php">Streaming Availability</a></li>
                 <li class="nav-item">
-                    <a class="nav-link active" href="#" onclick="showSection('movies'); return false;">
+                    <a class="nav-link active" href="#" data-section="movies">
                         <i class="fas fa-database me-2"></i>Movies
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showSection('analytics'); return false;">
+                    <a class="nav-link" href="#" data-section="analytics">
                         <i class="fas fa-chart-line me-2"></i>Analytics
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showSection('performance'); return false;">
+                    <a class="nav-link" href="#" data-section="performance">
                         <i class="fas fa-tachometer-alt me-2"></i>Performance
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showSection('optimization'); return false;">
+                    <a class="nav-link" href="#" data-section="optimization">
                         <i class="fas fa-sliders-h me-2"></i>Optimization
                     </a>
                 </li>
@@ -207,16 +201,16 @@ $movies = $stmt->fetchAll();
                                         <td><?= $movie['year'] ?? 'N/A' ?></td>
                                         <td><?= htmlspecialchars($movie['source']) ?></td>
                                         <td>
-                                            <a href="<?= htmlspecialchars($movie['download_url']) ?>" target="_blank" class="text-decoration-none text-truncate d-block" style="max-width: 200px;">
+                                            <a href="<?= htmlspecialchars(securityHttpUrl($movie['download_url']) ? $movie['download_url'] : '#', ENT_QUOTES, 'UTF-8') ?>" target="_blank" class="text-decoration-none text-truncate d-block" style="max-width: 200px;">
                                                 <?= htmlspecialchars(substr($movie['download_url'], 0, 30)) ?>...
                                             </a>
                                         </td>
                                         <td><?= date('M d, Y', strtotime($movie['created_at'])) ?></td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editMovie(<?= $movie['id'] ?>)">
+                                            <button class="btn btn-sm btn-outline-primary me-1" data-edit-movie="<?= (int)$movie['id'] ?>">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteMovie(<?= $movie['id'] ?>)">
+                                            <button class="btn btn-sm btn-outline-danger" data-delete-movie="<?= (int)$movie['id'] ?>">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </td>
@@ -397,18 +391,18 @@ $movies = $stmt->fetchAll();
                         </div>
                         <div class="mb-3">
                             <label for="newPassword" class="form-label">New Password *</label>
-                            <input type="password" class="form-control" id="newPassword" required minlength="6">
-                            <small class="text-muted">Minimum 6 characters</small>
+                            <input type="password" class="form-control" id="newPassword" required minlength="12" maxlength="72">
+                            <small class="text-muted">At least 12 characters; maximum 72 UTF-8 bytes</small>
                         </div>
                         <div class="mb-3">
                             <label for="confirmPassword" class="form-label">Confirm New Password *</label>
-                            <input type="password" class="form-control" id="confirmPassword" required minlength="6">
+                            <input type="password" class="form-control" id="confirmPassword" required minlength="12" maxlength="72">
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="changePassword()">Change Password</button>
+                    <button type="button" class="btn btn-primary" data-action="change-password">Change Password</button>
                 </div>
             </div>
         </div>
@@ -451,20 +445,38 @@ $movies = $stmt->fetchAll();
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveMovie()">Save</button>
+                    <button type="button" class="btn btn-primary" data-action="save-movie">Save</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script nonce="<?= htmlspecialchars(securityNonce(), ENT_QUOTES, 'UTF-8') ?>">
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        function adminFetch(url, options = {}) {
+            const headers = new Headers(options.headers || {});
+            if (!['GET', 'HEAD'].includes((options.method || 'GET').toUpperCase())) headers.set('X-CSRF-Token', csrfToken);
+            return window.fetch(url, { ...options, headers });
+        }
+        function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char])); }
+        document.addEventListener('click', event => {
+            const button = event.target.closest('[data-section], [data-edit-movie], [data-delete-movie], [data-action], [data-feature]');
+            if (!button) return;
+            event.preventDefault();
+            if (button.dataset.section) showSection(button.dataset.section, button);
+            else if (button.dataset.editMovie) editMovie(Number(button.dataset.editMovie));
+            else if (button.dataset.deleteMovie) deleteMovie(Number(button.dataset.deleteMovie));
+            else if (button.dataset.action === 'save-movie') saveMovie();
+            else if (button.dataset.action === 'change-password') changePassword();
+            else if (button.dataset.feature) toggleFeature(button.dataset.feature, button.dataset.enabled === 'true');
+        });
         const modal = new bootstrap.Modal(document.getElementById('movieModal'));
         const modalTitle = document.getElementById('movieModalTitle');
         const movieForm = document.getElementById('movieForm');
 
         // Section switching
-        function showSection(section) {
+        function showSection(section, link) {
             // Hide all sections
             document.getElementById('moviesSection').classList.add('d-none');
             document.getElementById('analyticsSection').classList.add('d-none');
@@ -478,7 +490,7 @@ $movies = $stmt->fetchAll();
             document.getElementById(section + 'Section').classList.remove('d-none');
             
             // Add active class to clicked link
-            event.target.classList.add('active');
+            link.classList.add('active');
             
             // Show/hide add movie button
             const addBtn = document.getElementById('addMovieBtn');
@@ -500,7 +512,7 @@ $movies = $stmt->fetchAll();
 
         // Load analytics data
         function loadAnalyticsData() {
-            fetch('../api/analytics.php?dashboard=true')
+            adminFetch('../api/analytics.php?dashboard=true')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -513,8 +525,8 @@ $movies = $stmt->fetchAll();
                         let topContentHtml = '<ul class="list-group">';
                         data.data.top_content.forEach(item => {
                             topContentHtml += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>${item.content_type.toUpperCase()} #${item.content_id}</span>
-                                <span class="badge bg-primary">${item.views} views</span>
+                                <span>${escapeHtml(item.content_type.toUpperCase())} #${escapeHtml(item.content_id)}</span>
+                                <span class="badge bg-primary">${escapeHtml(item.views)} views</span>
                             </li>`;
                         });
                         topContentHtml += '</ul>';
@@ -524,8 +536,8 @@ $movies = $stmt->fetchAll();
                         let pageViewsHtml = '<ul class="list-group">';
                         data.data.page_views.by_page_type.forEach(item => {
                             pageViewsHtml += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>${item.page_type}</span>
-                                <span class="badge bg-secondary">${item.count}</span>
+                                <span>${escapeHtml(item.page_type)}</span>
+                                <span class="badge bg-secondary">${escapeHtml(item.count)}</span>
                             </li>`;
                         });
                         pageViewsHtml += '</ul>';
@@ -535,8 +547,8 @@ $movies = $stmt->fetchAll();
                         let providerHtml = '<ul class="list-group">';
                         data.data.provider_clicks.by_provider.forEach(item => {
                             providerHtml += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>${item.provider}</span>
-                                <span class="badge bg-info">${item.count}</span>
+                                <span>${escapeHtml(item.provider)}</span>
+                                <span class="badge bg-info">${escapeHtml(item.count)}</span>
                             </li>`;
                         });
                         providerHtml += '</ul>';
@@ -551,7 +563,7 @@ $movies = $stmt->fetchAll();
 
         // Load performance data
         function loadPerformanceData() {
-            fetch('../api/performance.php?type=dashboard')
+            adminFetch('../api/performance.php?type=dashboard')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -559,12 +571,12 @@ $movies = $stmt->fetchAll();
                         let apiHtml = '';
                         data.data.api_metrics.forEach(item => {
                             apiHtml += `<tr>
-                                <td>${item.endpoint}</td>
-                                <td>${item.method}</td>
-                                <td>${item.avg_response.toFixed(2)}</td>
-                                <td>${item.requests}</td>
-                                <td>${item.errors}</td>
-                                <td>${item.cache_hit_rate.toFixed(1)}%</td>
+                                <td>${escapeHtml(item.endpoint)}</td>
+                                <td>${escapeHtml(item.method)}</td>
+                                <td>${escapeHtml(Number(item.avg_response || 0).toFixed(2))}</td>
+                                <td>${escapeHtml(item.requests)}</td>
+                                <td>${escapeHtml(item.errors)}</td>
+                                <td>${escapeHtml(Number(item.cache_hit_rate || 0).toFixed(1))}%</td>
                             </tr>`;
                         });
                         document.getElementById('apiMetricsTable').innerHTML = apiHtml || '<tr><td colspan="6" class="text-center">No data available</td></tr>';
@@ -573,12 +585,12 @@ $movies = $stmt->fetchAll();
                         let cacheHtml = '';
                         data.data.cache_metrics.forEach(item => {
                             cacheHtml += `<tr>
-                                <td>${item.cache_key.substring(0, 50)}...</td>
-                                <td>${item.cache_type}</td>
-                                <td>${item.hit_count}</td>
-                                <td>${item.miss_count}</td>
-                                <td>${item.hit_rate.toFixed(1)}%</td>
-                                <td>${item.size_bytes ? (item.size_bytes / 1024).toFixed(2) + ' KB' : 'N/A'}</td>
+                                <td>${escapeHtml(item.cache_key.substring(0, 50))}...</td>
+                                <td>${escapeHtml(item.cache_type)}</td>
+                                <td>${escapeHtml(item.hit_count)}</td>
+                                <td>${escapeHtml(item.miss_count)}</td>
+                                <td>${escapeHtml(Number(item.hit_rate || 0).toFixed(1))}%</td>
+                                <td>${escapeHtml(item.size_bytes ? (item.size_bytes / 1024).toFixed(2) + ' KB' : 'N/A')}</td>
                             </tr>`;
                         });
                         document.getElementById('cacheMetricsTable').innerHTML = cacheHtml || '<tr><td colspan="6" class="text-center">No data available</td></tr>';
@@ -591,23 +603,23 @@ $movies = $stmt->fetchAll();
 
         // Load optimization data
         function loadOptimizationData() {
-            fetch('../api/performance.php?type=feature_flags')
+            adminFetch('../api/performance.php?type=feature_flags')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         let flagsHtml = '';
                         data.data.forEach(flag => {
                             flagsHtml += `<tr>
-                                <td>${flag.feature_name}</td>
+                                <td>${escapeHtml(flag.feature_name)}</td>
                                 <td>
                                     <span class="badge ${flag.is_enabled ? 'bg-success' : 'bg-secondary'}">
                                         ${flag.is_enabled ? 'Enabled' : 'Disabled'}
                                     </span>
                                 </td>
-                                <td>${flag.description || 'N/A'}</td>
-                                <td>${flag.rollout_percentage}%</td>
+                                <td>${escapeHtml(flag.description || 'N/A')}</td>
+                                <td>${escapeHtml(flag.rollout_percentage)}%</td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-primary" onclick="toggleFeature('${flag.feature_name}', ${!flag.is_enabled})">
+                                    <button class="btn btn-sm btn-outline-primary" data-feature="${escapeHtml(flag.feature_name)}" data-enabled="${!flag.is_enabled}">
                                         ${flag.is_enabled ? 'Disable' : 'Enable'}
                                     </button>
                                 </td>
@@ -623,7 +635,7 @@ $movies = $stmt->fetchAll();
 
         // Toggle feature flag
         function toggleFeature(featureName, isEnabled) {
-            fetch('../api/performance.php?type=feature_flags', {
+            adminFetch('../api/performance.php?type=feature_flags', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -654,7 +666,7 @@ $movies = $stmt->fetchAll();
 
         // Edit movie
         function editMovie(id) {
-            fetch(`../api/movies.php?id=${id}`)
+            adminFetch(`../api/movies.php?id=${id}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -685,7 +697,7 @@ $movies = $stmt->fetchAll();
             const url = movieId ? `../api/movies.php?id=${movieId}` : '../api/movies.php';
             const method = movieId ? 'PUT' : 'POST';
 
-            fetch(url, {
+            adminFetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(movieData)
@@ -705,7 +717,7 @@ $movies = $stmt->fetchAll();
         // Delete movie
         function deleteMovie(id) {
             if (confirm('Are you sure you want to delete this movie?')) {
-                fetch(`../api/movies.php?id=${id}`, { method: 'DELETE' })
+                adminFetch(`../api/movies.php?id=${id}`, { method: 'DELETE' })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -736,13 +748,13 @@ $movies = $stmt->fetchAll();
                 return;
             }
 
-            if (newPassword.length < 6) {
-                alert('Password must be at least 6 characters');
+            if (newPassword.length < 12 || new TextEncoder().encode(newPassword).length > 72) {
+                alert('Use at least 12 characters and at most 72 UTF-8 bytes');
                 return;
             }
 
             // Send change password request
-            fetch('change_password.php', {
+            adminFetch('change_password.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

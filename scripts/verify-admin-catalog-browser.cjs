@@ -4,6 +4,7 @@ const fs = require('fs');
 const assert = require('assert/strict');
 const { chromium } = require(path.join(os.tmpdir(), 'moviesync-browser-tools/node_modules/playwright'));
 const base = 'http://127.0.0.1:8000';
+if (!process.env.CINEHUB_ADMIN_USER?.startsWith('catalog_qa_') || !process.env.CINEHUB_ADMIN_PASSWORD) throw Error('Use verify-admin-catalog.php to create a disposable QA admin.');
 const id = '9007199254740000'; // Synthetic QA record, never a real TMDB title.
 (async () => {
   const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
@@ -22,8 +23,8 @@ const id = '9007199254740000'; // Synthetic QA record, never a real TMDB title.
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(base + '/admin/');
-    await page.getByLabel('Username', { exact: true }).fill(process.env.CINEHUB_ADMIN_USER || 'admin');
-    await page.getByLabel('Password', { exact: true }).fill(process.env.CINEHUB_ADMIN_PASSWORD || 'admin123');
+    await page.getByLabel('Username', { exact: true }).fill(process.env.CINEHUB_ADMIN_USER);
+    await page.getByLabel('Password', { exact: true }).fill(process.env.CINEHUB_ADMIN_PASSWORD);
     await page.locator('form button[type="submit"]').click();
     await page.waitForURL('**/admin/index.php');
     await page.getByRole('link', { name: 'Streaming Availability', exact: true }).click();
@@ -68,7 +69,7 @@ const id = '9007199254740000'; // Synthetic QA record, never a real TMDB title.
       const current = await (await context.request.get(base + '/api/streaming-availability.php')).json();
       if (current.movies?.[id]?.title?.startsWith('Temporary QA catalog record')) await context.request.delete(base + '/api/streaming-availability.php', { headers: { 'X-CSRF-Token': token }, data: { tmdbId: id } });
     }
-    if (context) await context.request.get(base + '/admin/logout.php');
+    if (context) await context.request.post(base + '/admin/logout.php', { form: { csrf_token: token } });
     await browser.close();
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });

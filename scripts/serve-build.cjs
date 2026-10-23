@@ -4,6 +4,10 @@ const path = require('path');
 const root = path.resolve(__dirname, '../build');
 const types = { '.js': 'application/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 http.createServer((request, response) => {
+  for (const line of fs.readFileSync(path.join(root, '_headers'), 'utf8').split('\n')) {
+    const match = line.match(/^  ([\w-]+): (.+)$/);
+    if (match) response.setHeader(match[1], match[2]);
+  }
   let pathname;
   try { pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname); }
   catch { response.writeHead(400); response.end(); return; }

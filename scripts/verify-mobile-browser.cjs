@@ -39,7 +39,7 @@ const genres = Array.from({ length: 19 }, (_, i) => ({ id: i === 0 ? 28 : 100 + 
           await search.fill('movie');
           await page.waitForURL('**/search');
         }
-        await page.locator(route === '/about' ? '.feature-card' : route === '/genre/28' ? '.catalog-card' : route.includes('/550') ? '.movie-title' : '.movie-row-card').first().waitFor();
+        await page.locator(route === '/search' ? '.search-content .movie-row-card' : route === '/about' ? '.feature-card' : route === '/genre/28' ? '.catalog-card' : route.includes('/550') ? '.movie-title' : '.movie-row-card').first().waitFor();
         await page.evaluate(() => document.fonts.ready);
         const metrics = await page.evaluate(() => {
           const selectors = ['.navbar', '.hero-section', '.hero-title', '.home-content', '.search-content', '.catalog-card', '.movie-poster', '.movie-info', '.movie-row-card', '.about-content'];

@@ -15,24 +15,19 @@
 
 require_once '../config.php';
 
-// Set headers for CORS
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-// Handle preflight requests
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
+securityCors('GET, POST, PUT, OPTIONS');
 
 $method = $_SERVER['REQUEST_METHOD'];
 $type = isset($_GET['type']) ? $_GET['type'] : null;
+if ($method === 'GET') securityRequireAdmin();
+if ($method === 'PUT' || ($method === 'POST' && $type !== 'api_metric')) securityRequireAdmin(true);
+if ($method === 'POST' && $type === 'api_metric') securityRate('performance:' . ($_SERVER['REMOTE_ADDR'] ?? ''), 120, 60);
 
 // POST - Track performance metric or cache metric
 if ($method === 'POST') {
     try {
-        $input = json_decode(file_get_contents('php://input'), true);
+        $input = securityReadJson();
+        securityValidateTelemetry($input);
         
         if (!$type) {
             sendErrorResponse('type parameter is required');
@@ -109,7 +104,8 @@ if ($method === 'POST') {
             sendErrorResponse('Invalid type');
         }
     } catch (PDOException $e) {
-        sendErrorResponse('Database error: ' . $e->getMessage());
+        error_log('API database failure: ' . $e->getMessage());
+        sendErrorResponse('Database operation unavailable.', 503);
     }
 }
 
@@ -117,7 +113,8 @@ if ($method === 'POST') {
 elseif ($method === 'PUT') {
     try {
         if ($type === 'feature_flags') {
-            $input = json_decode(file_get_contents('php://input'), true);
+            $input = securityReadJson();
+        securityValidateTelemetry($input);
             
             if (!isset($input['feature_name'])) {
                 sendErrorResponse('feature_name is required');
@@ -155,7 +152,8 @@ elseif ($method === 'PUT') {
             sendErrorResponse('Invalid type for PUT request');
         }
     } catch (PDOException $e) {
-        sendErrorResponse('Database error: ' . $e->getMessage());
+        error_log('API database failure: ' . $e->getMessage());
+        sendErrorResponse('Database operation unavailable.', 503);
     }
 }
 
@@ -206,7 +204,8 @@ elseif ($method === 'GET') {
                 sendErrorResponse('Invalid type');
         }
     } catch (PDOException $e) {
-        sendErrorResponse('Database error: ' . $e->getMessage());
+        error_log('API database failure: ' . $e->getMessage());
+        sendErrorResponse('Database operation unavailable.', 503);
     }
 }
 

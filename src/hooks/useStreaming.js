@@ -118,6 +118,8 @@ export default function useStreaming(selection, servers = PLAYBACK_SERVERS) {
     iframeProps: {
       ref: iframeRef,
       src: url || undefined, allow: 'autoplay; encrypted-media; fullscreen; picture-in-picture',
+      // Blocks provider popups, downloads and top-level redirects, including after a click.
+      sandbox: 'allow-scripts allow-same-origin allow-forms allow-presentation',
       allowFullScreen: true, referrerPolicy: 'strict-origin-when-cross-origin',
       onLoad: () => mark('embedded-unverified'),
       onError: () => fail('The embedded source could not load.'),

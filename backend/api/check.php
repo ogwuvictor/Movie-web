@@ -15,17 +15,10 @@
 
 require_once '../config.php';
 
-// Set headers for CORS
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+securityCors('GET, OPTIONS');
 
-// Handle preflight requests
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
-
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') sendErrorResponse('Method not allowed', 405);
+foreach (['id', 'tmdb_id'] as $key) if (isset($_GET[$key]) && (!is_string($_GET[$key]) || !preg_match('/^[1-9][0-9]{0,9}$/D', $_GET[$key]) || (int)$_GET[$key] > 2147483647)) sendErrorResponse('Invalid ID', 422);
 // Get TMDB ID from query parameter
 $tmdb_id = isset($_GET['tmdb_id']) ? (int)$_GET['tmdb_id'] : null;
 
@@ -53,5 +46,6 @@ try {
         ]);
     }
 } catch (PDOException $e) {
-    sendErrorResponse('Database error: ' . $e->getMessage());
+    error_log('API database failure: ' . $e->getMessage());
+        sendErrorResponse('Database operation unavailable.', 503);
 }

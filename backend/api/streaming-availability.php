@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../security.php';
+securityCors('GET, POST, DELETE, OPTIONS');
 require_once __DIR__ . '/../lib/streaming_availability.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -12,7 +14,6 @@ function catalogResponse($data, $status = 200) {
 
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
-    header('Access-Control-Allow-Origin: *');
     try {
         $catalog = readStreamingCatalog();
         $catalog['movies'] = (object)$catalog['movies'];
@@ -25,19 +26,10 @@ if (!in_array($method, ['POST', 'DELETE'], true)) {
     header('Allow: GET, POST, DELETE');
     catalogResponse(['error' => 'Method not allowed.'], 405);
 }
-session_start();
-if (empty($_SESSION['admin_logged_in'])) catalogResponse(['error' => 'Admin login required.'], 401);
-$token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-if (!is_string($token) || empty($_SESSION['catalog_csrf']) || !hash_equals($_SESSION['catalog_csrf'], $token)) {
-    catalogResponse(['error' => 'Invalid session token. Reload the admin page.'], 403);
-}
-if (stripos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== 0) {
-    catalogResponse(['error' => 'Send application/json.'], 415);
-}
+require_once __DIR__ . '/../config.php';
+securityRequireAdmin(true);
 try {
-    $raw = file_get_contents('php://input', false, null, 0, 16385);
-    if (strlen($raw) > 16384) catalogResponse(['error' => 'Request too large.'], 413);
-    $input = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+    $input = securityReadJson();
     if ($method === 'POST') {
         [$id, $record] = validateStreamingRecord($input);
         updateStreamingCatalog(function ($catalog) use ($id, $record) { $catalog['movies'][$id] = $record; return $catalog; });

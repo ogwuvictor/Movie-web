@@ -11,23 +11,17 @@
 
 require_once '../config.php';
 
-// Set headers for CORS
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-// Handle preflight requests
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
+securityCors('GET, POST, OPTIONS');
 
 $method = $_SERVER['REQUEST_METHOD'];
+if ($method === 'GET') securityRequireAdmin();
+if ($method === 'POST') securityRate('analytics:' . ($_SERVER['REMOTE_ADDR'] ?? ''), 120, 60);
 
 // POST - Track analytics event
 if ($method === 'POST') {
     try {
-        $input = json_decode(file_get_contents('php://input'), true);
+        $input = securityReadJson();
+        securityValidateTelemetry($input);
         
         if (!isset($input['event_type'])) {
             sendErrorResponse('event_type is required');
@@ -50,7 +44,7 @@ if ($method === 'POST') {
                     $input['content_type'] ?? null,
                     $input['referrer'] ?? null,
                     $input['user_agent'] ?? $_SERVER['HTTP_USER_AGENT'] ?? null,
-                    $input['ip_address'] ?? $_SERVER['REMOTE_ADDR'] ?? null,
+                    $_SERVER['REMOTE_ADDR'] ?? null,
                     $input['country_code'] ?? null,
                     $input['city'] ?? null,
                     $input['device_type'] ?? null,
@@ -81,7 +75,7 @@ if ($method === 'POST') {
                     $input['video_end_time'] ?? null,
                     $input['completion_percentage'] ?? 0,
                     $input['user_agent'] ?? $_SERVER['HTTP_USER_AGENT'] ?? null,
-                    $input['ip_address'] ?? $_SERVER['REMOTE_ADDR'] ?? null,
+                    $_SERVER['REMOTE_ADDR'] ?? null,
                     $input['device_type'] ?? null
                 ]);
                 break;
@@ -100,7 +94,7 @@ if ($method === 'POST') {
                     $input['provider'],
                     $input['provider_url'] ?? null,
                     $input['user_agent'] ?? $_SERVER['HTTP_USER_AGENT'] ?? null,
-                    $input['ip_address'] ?? $_SERVER['REMOTE_ADDR'] ?? null,
+                    $_SERVER['REMOTE_ADDR'] ?? null,
                     $input['country_code'] ?? null,
                     $input['referrer'] ?? null
                 ]);
@@ -119,7 +113,7 @@ if ($method === 'POST') {
                     $input['clicked_result_id'] ?? null,
                     $input['clicked_result_type'] ?? null,
                     $input['user_agent'] ?? $_SERVER['HTTP_USER_AGENT'] ?? null,
-                    $input['ip_address'] ?? $_SERVER['REMOTE_ADDR'] ?? null
+                    $_SERVER['REMOTE_ADDR'] ?? null
                 ]);
                 break;
                 
@@ -136,7 +130,7 @@ if ($method === 'POST') {
                     $input['action_type'],
                     $input['action_value'] ?? null,
                     $input['user_agent'] ?? $_SERVER['HTTP_USER_AGENT'] ?? null,
-                    $input['ip_address'] ?? $_SERVER['REMOTE_ADDR'] ?? null
+                    $_SERVER['REMOTE_ADDR'] ?? null
                 ]);
                 break;
                 
@@ -146,7 +140,8 @@ if ($method === 'POST') {
         
         sendSuccessResponse(null, 'Analytics event tracked successfully');
     } catch (PDOException $e) {
-        sendErrorResponse('Database error: ' . $e->getMessage());
+        error_log('API database failure: ' . $e->getMessage());
+        sendErrorResponse('Database operation unavailable.', 503);
     }
 }
 
@@ -193,7 +188,8 @@ elseif ($method === 'GET') {
             sendErrorResponse('Specify type or set dashboard=true');
         }
     } catch (PDOException $e) {
-        sendErrorResponse('Database error: ' . $e->getMessage());
+        error_log('API database failure: ' . $e->getMessage());
+        sendErrorResponse('Database operation unavailable.', 503);
     }
 }
 

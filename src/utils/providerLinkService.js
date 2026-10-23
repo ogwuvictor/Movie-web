@@ -123,7 +123,7 @@ export const isProviderSupported = (providerKey) => {
 export const buildProviderUrl = (providerKey, title) => {
   if (!providerKey || !title) return null;
   
-  const config = PROVIDER_CONFIG[providerKey];
+  const config = Object.prototype.hasOwnProperty.call(PROVIDER_CONFIG, providerKey) ? PROVIDER_CONFIG[providerKey] : null;
   if (!config) return null;
   
   // Build query parameters
@@ -142,7 +142,7 @@ export const buildProviderUrl = (providerKey, title) => {
  * @returns {string} Button label for the provider
  */
 export const getProviderButtonLabel = (providerKey) => {
-  const config = PROVIDER_CONFIG[providerKey];
+  const config = Object.prototype.hasOwnProperty.call(PROVIDER_CONFIG, providerKey) ? PROVIDER_CONFIG[providerKey] : null;
   return config ? config.buttonLabel : 'Watch Now';
 };
 
@@ -152,7 +152,7 @@ export const getProviderButtonLabel = (providerKey) => {
  * @returns {string} Display name for the provider
  */
 export const getProviderDisplayName = (providerKey) => {
-  const config = PROVIDER_CONFIG[providerKey];
+  const config = Object.prototype.hasOwnProperty.call(PROVIDER_CONFIG, providerKey) ? PROVIDER_CONFIG[providerKey] : null;
   return config ? config.name : providerKey;
 };
 

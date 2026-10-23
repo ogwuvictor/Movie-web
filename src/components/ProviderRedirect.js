@@ -8,6 +8,7 @@
  * @version 1.0.0
  */
 
+import { safeExternalUrl } from '../utils/safeExternalUrl';
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { buildProviderUrl } from '../utils/providerLinkService';
@@ -30,8 +31,8 @@ const ProviderRedirect = () => {
     logClick(provider, title, tmdbId);
 
     // Build the final provider URL
-    const decodedTitle = decodeURIComponent(title);
-    const finalUrl = buildProviderUrl(provider, decodedTitle);
+    // URLSearchParams has already decoded the title.
+    const finalUrl = safeExternalUrl(buildProviderUrl(provider, title));
 
     if (finalUrl) {
       // Redirect to the provider
@@ -49,7 +50,7 @@ const ProviderRedirect = () => {
   const logClick = (provider, title, tmdbId) => {
     const clickData = {
       provider,
-      title: decodeURIComponent(title),
+      title,
       tmdbId,
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
@@ -66,9 +67,12 @@ const ProviderRedirect = () => {
     // });
 
     // Store in localStorage for basic tracking
-    const clickHistory = JSON.parse(localStorage.getItem('providerClicks') || '[]');
-    clickHistory.push(clickData);
-    localStorage.setItem('providerClicks', JSON.stringify(clickHistory.slice(-100))); // Keep last 100 clicks
+    try {
+      const stored = JSON.parse(localStorage.getItem('providerClicks') || '[]');
+      const clickHistory = Array.isArray(stored) ? stored : [];
+      clickHistory.push(clickData);
+      localStorage.setItem('providerClicks', JSON.stringify(clickHistory.slice(-100))); // Keep last 100 clicks
+    } catch { /* Tracking must not block navigation when storage is unavailable. */ }
   };
 
   // Show loading state while redirecting
