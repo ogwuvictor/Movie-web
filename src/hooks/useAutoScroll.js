@@ -27,6 +27,8 @@ const useAutoScroll = ({
     if (!container) return;
 
     const scroll = () => {
+      // On phones, leave browsing under the visitor's touch control.
+      if (window.matchMedia('(max-width: 575.98px)').matches) return;
       if (isPaused || isUserScrolling.current) return;
 
       const maxScrollLeft = container.scrollWidth - container.clientWidth;

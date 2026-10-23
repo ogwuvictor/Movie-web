@@ -37,7 +37,7 @@ const TVShows = () => {
 
   if (loading) {
     return (
-      <div className="container py-5">
+      <div className="container catalog-page py-5">
         <div className="row">
           <div className="col-12">
             <div className="section-header text-center">
@@ -54,7 +54,7 @@ const TVShows = () => {
 
   if (error) {
     return (
-      <div className="container py-5">
+      <div className="container catalog-page py-5">
         <div className="row">
           <div className="col-12">
             <div className="section-header text-center">
@@ -69,7 +69,7 @@ const TVShows = () => {
   }
 
   return (
-    <div className="container py-5">
+    <div className="container catalog-page py-5">
       <div className="row">
         <div className="col-12">
           <Link to="/" className="btn btn-outline-light mb-4">
@@ -85,27 +85,8 @@ const TVShows = () => {
           </div>
 
           {tvShows.length > 0 ? (
-            <div className="row">
-              {tvShows.map((show) => (
-                <div key={show.id} className="col-lg-3 col-md-4 col-sm-6 mb-4">
-                  <div className="movie-card">
-                    <img 
-                      src={show.poster_path ? `https://image.tmdb.org/t/p/w780${show.poster_path}` : 'https://placehold.co/780x1170/2a2a2a/FFFFFF?text=No+Poster'} 
-                      alt={show.name} 
-                      loading="lazy"
-                    />
-                    <div className="movie-card-body">
-                      <h5 className="movie-card-title">{show.name}</h5>
-                      <p className="movie-card-text">
-                        {show.overview ? show.overview.substring(0, 100) + '...' : 'No description available'}
-                      </p>
-                      <Link to={`/tv/${show.id}`} className="btn btn-primary btn-sm">
-                        View Details
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="catalog-grid">
+              {tvShows.map(show => <MovieCard key={show.id} movie={show} mediaType="tv" />)}
             </div>
           ) : (
             <div className="text-center py-5">

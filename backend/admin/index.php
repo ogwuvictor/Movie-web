@@ -138,6 +138,7 @@ $movies = $stmt->fetchAll();
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <ul class="nav nav-tabs">
+                <li class="nav-item"><a class="nav-link" href="streaming.php">Streaming Availability</a></li>
                 <li class="nav-item">
                     <a class="nav-link active" href="#" onclick="showSection('movies'); return false;">
                         <i class="fas fa-database me-2"></i>Movies
@@ -159,7 +160,7 @@ $movies = $stmt->fetchAll();
                     </a>
                 </li>
             </ul>
-            <button class="btn btn-primary" id="addMovieBtn" data-bs-toggle="modal" data-bs-target="#addMovieModal">
+            <button class="btn btn-primary" id="addMovieBtn" data-bs-toggle="modal" data-bs-target="#movieModal">
                 <i class="fas fa-plus me-2"></i>Add Movie
             </button>
         </div>
@@ -188,7 +189,7 @@ $movies = $stmt->fetchAll();
                                     <td colspan="8" class="text-center py-4">
                                         <i class="fas fa-inbox fa-2x mb-3"></i>
                                         <p>No public domain movies found.</p>
-                                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addMovieModal">
+                                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#movieModal">
                                             Add First Movie
                                         </button>
                                     </td>
@@ -643,12 +644,12 @@ $movies = $stmt->fetchAll();
         }
 
         // Show add modal
-        document.getElementById('addMovieModal').addEventListener('click', function() {
+        document.getElementById('movieModal').addEventListener('show.bs.modal', function(event) {
+            if (!event.relatedTarget) return;
             modalTitle.textContent = 'Add Movie';
             movieForm.reset();
             document.getElementById('movieId').value = '';
             document.getElementById('source').value = 'Internet Archive';
-            modal.show();
         });
 
         // Edit movie

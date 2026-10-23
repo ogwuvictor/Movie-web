@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { processProviders, generateRedirectUrl } from '../utils/providerLinkService';
+import StreamingModal from './StreamingModal';
 
 const TVShowDetails = () => {
   const { id } = useParams();
+  const seriesIdRef = useRef(id);
+  seriesIdRef.current = id;
   const [tvDetails, setTVDetails] = useState({});
   const [posterPath, setPosterPath] = useState('');
   const [backDrop, setBackDrop] = useState('');
@@ -11,15 +14,24 @@ const TVShowDetails = () => {
   const [watchProviders, setWatchProviders] = useState(null);
   const [processedProviders, setProcessedProviders] = useState([]);
   const [showProvidersModal, setShowProvidersModal] = useState(false);
+  const [showStreamingModal, setShowStreamingModal] = useState(false);
   const [similarTVShows, setSimilarTVShows] = useState([]);
   const [recommendedTVShows, setRecommendedTVShows] = useState([]);
   const [seasons, setSeasons] = useState([]);
   const [expandedSeason, setExpandedSeason] = useState(null);
   const [episodes, setEpisodes] = useState({});
+  const [selectedEpisode, setSelectedEpisode] = useState(null);
+  const playbackEpisode = selectedEpisode || episodes[expandedSeason]?.[0];
+  const openEpisode = (seasonNumber, episode) => {
+    // Use the parent series ID, never the episode's own TMDB ID.
+    if (!episodes[seasonNumber]?.some(item => item.id === episode.id)) return;
+    setSelectedEpisode({ season_number: seasonNumber, episode_number: episode.episode_number });
+    setShowStreamingModal(true);
+  };
 
   // Fetch episodes for a specific season
-  const fetchSeasonEpisodes = async (seasonNumber) => {
-    if (episodes[seasonNumber]) {
+  const fetchSeasonEpisodes = async (seasonNumber, force = false) => {
+    if (!force && episodes[seasonNumber]) {
       // Already fetched, just expand
       setExpandedSeason(seasonNumber);
       return;
@@ -31,6 +43,7 @@ const TVShowDetails = () => {
       
       if (response.ok) {
         const seasonData = await response.json();
+        if (seriesIdRef.current !== id) return;
         setEpisodes(prev => ({
           ...prev,
           [seasonNumber]: seasonData.episodes || []
@@ -47,11 +60,18 @@ const TVShowDetails = () => {
     if (expandedSeason === seasonNumber) {
       setExpandedSeason(null);
     } else {
+      setSelectedEpisode(null);
       fetchSeasonEpisodes(seasonNumber);
     }
   };
 
   useEffect(() => {
+    setShowProvidersModal(false);
+    setShowStreamingModal(false);
+    setSelectedEpisode(null);
+    setEpisodes({});
+    setExpandedSeason(null);
+    setProcessedProviders([]);
     const fetchTVDetails = async () => {
       setLoading(true);
       
@@ -64,13 +84,14 @@ const TVShowDetails = () => {
         }
         
         const data = await response.json();
+        if (seriesIdRef.current !== id) return;
         setTVDetails(data);
         setSeasons(data.seasons || []);
         
         // Auto-expand first season if available
         if (data.seasons && data.seasons.length > 0) {
           const firstSeasonNumber = data.seasons[0].season_number;
-          fetchSeasonEpisodes(firstSeasonNumber);
+          fetchSeasonEpisodes(firstSeasonNumber, true);
         }
         setPosterPath(data.poster_path 
           ? `https://image.tmdb.org/t/p/w780${data.poster_path}`
@@ -159,6 +180,10 @@ const TVShowDetails = () => {
                   <Link to={`/tvtrailers/${id}`} className="netflix-play-btn">
                     <i className="fas fa-play"></i> Play Trailer
                   </Link>
+                  <button type="button" className="netflix-play-btn" disabled={!playbackEpisode}
+                    onClick={() => setShowStreamingModal(true)}>
+                    <i className="fas fa-play"></i> Watch Now
+                  </button>
                   {processedProviders.length > 0 ? (
                     <button 
                       className="netflix-info-btn"
@@ -228,7 +253,15 @@ const TVShowDetails = () => {
                     {expandedSeason === season.season_number && episodes[season.season_number] && (
                       <div className="netflix-episodes-list">
                         {episodes[season.season_number].map((episode) => (
-                          <div key={episode.id} className="netflix-episode-item">
+                          <div key={episode.id} className="netflix-episode-item"
+                            role="button" tabIndex={0}
+                            onClick={() => openEpisode(season.season_number, episode)}
+                            onKeyDown={event => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                openEpisode(season.season_number, episode);
+                              }
+                            }}>
                             <div className="netflix-episode-number">
                               {episode.episode_number}
                             </div>
@@ -346,6 +379,11 @@ const TVShowDetails = () => {
           </div>
         </div>
       )}
+      {showStreamingModal && playbackEpisode && <StreamingModal
+        selection={{ tmdbId: id, mediaType: 'tv',
+          season: playbackEpisode.season_number ?? expandedSeason,
+          episode: playbackEpisode.episode_number }}
+        title={tvDetails.name} onClose={() => setShowStreamingModal(false)} />}
     </div>
   );
 };

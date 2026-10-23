@@ -1,6 +1,7 @@
 import React from 'react'
+import { Link } from 'react-router-dom';
 
-const Hero = ({title}) => {
+const Hero = ({title, subtitle, children}) => {
     return (
         <div className="hero-section">
             <div className="container">
@@ -8,16 +9,13 @@ const Hero = ({title}) => {
                     {title === 'Home' ? 'Discover Amazing Movies' : title}
                 </h1>
                 <p className="lead text-white mb-4">
-                    Explore the latest blockbusters, timeless classics, and hidden gems
+                    {subtitle || 'Explore the latest blockbusters, timeless classics, and hidden gems'}
                 </p>
-                <div className="d-flex flex-column flex-sm-row justify-content-center gap-2 gap-sm-3">
-                    <button className="btn btn-primary btn-sm-md">
+                {children || <div className="d-flex flex-column flex-sm-row justify-content-center gap-2 gap-sm-3">
+                    <Link to="/" className="btn btn-primary btn-sm-md">
                         Browse Movies
-                    </button>
-                    <button className="btn btn-outline-light btn-sm-md">
-                        Watch Trailers
-                    </button>
-                </div>
+                    </Link>
+                </div>}
             </div>
         </div>
      );

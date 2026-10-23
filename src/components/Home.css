@@ -1,0 +1,7 @@
+/* Widen only the home-page collections; other page containers stay intact. */
+.home-page .home-content {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: clamp(1rem, 2.5vw, 3rem);
+}

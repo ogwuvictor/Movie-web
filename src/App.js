@@ -18,6 +18,7 @@ import Search from './components/search';
 import MovieDetails from './components/Moviedetails';
 import MovieTrailers from './components/Trailers';
 import ProviderRedirect from './components/ProviderRedirect';
+import './Mobile.css';
 
 
 function App() {

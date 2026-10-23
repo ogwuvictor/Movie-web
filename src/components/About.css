@@ -1,0 +1,12 @@
+/* Preserve the intended mobile grid despite legacy global column overrides. */
+@media (max-width: 767px) {
+  .about-page .about-features > div {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .about-page .about-steps .stats-section > .row > div {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}

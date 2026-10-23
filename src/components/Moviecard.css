@@ -1,0 +1,54 @@
+.container.catalog-page {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: clamp(1rem, 2.5vw, 3rem);
+}
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 24px 16px;
+}
+.catalog-card { min-width: 0; color: #fff; text-decoration: none; }
+.catalog-card-artwork {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #181818;
+}
+.catalog-card-artwork img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.catalog-card-artwork img[hidden] { display: none; }
+.catalog-poster-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  color: #aaa;
+  text-align: center;
+  font-size: .85rem;
+}
+.catalog-card-info { padding-top: 10px; }
+.catalog-card-info h3 {
+  margin: 0 0 4px;
+  font-size: .95rem;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.catalog-card-info span { color: #aaa; font-size: .8rem; }
+.catalog-card:hover { color: #fff; }
+.catalog-card:hover h3 { text-decoration: underline; }
+.catalog-card:focus-visible { outline: 2px solid #fff; outline-offset: 4px; border-radius: 8px; }
+@media (max-width: 575px) {
+  .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; }
+}

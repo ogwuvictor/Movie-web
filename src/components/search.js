@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Hero from './Hero';
+import './Search.css';
 import useAutoScroll from '../hooks/useAutoScroll';
-import { 
-  searchMulti, 
-  getImageUrl,
-  getProfileImageUrl
-} from '../utils/tmdbSearchService';
+import { searchMulti } from '../utils/tmdbSearchService';
 
 /**
  * Search Component - Multi-Search Implementation
@@ -43,7 +40,6 @@ import {
  * @returns {JSX.Element} Search results component with grouped sections
  */
 const Search = ({ keyword }) => {
-  const navigate = useNavigate();
   const [results, setResults] = useState({ movies: [], tvShows: [], people: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -108,10 +104,10 @@ const Search = ({ keyword }) => {
   const totalResults = results.movies.length + results.tvShows.length;
 
   return (
-    <div>
+    <div className="search-page">
       <Hero title={`Search Results for "${keyword}"`} />
 
-      <div className="container py-5">
+      <div className="container search-content py-5">
         {loading && (
           <div className="text-center py-5">
             <div className="spinner-border text-primary" role="status">
@@ -166,21 +162,19 @@ const Search = ({ keyword }) => {
                 
                 const posterpath = movie.poster_path 
                   ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                  : 'https://placehold.co/500x750/2a2a2a/FFFFFF?text=No+Poster';
+                  : undefined;
                 
                 return (
-                  <div 
+                  <Link
                     key={movie.id}
                     className="movie-row-card"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      navigate(`/moviedetails/${movie.id}`);
-                    }}
-                    style={{ cursor: 'pointer', position: 'relative', zIndex: 10 }}
+                    to={`/moviedetails/${movie.id}`}
                   >
+                    <span className="search-poster-fallback" aria-hidden="true">No poster available</span>
                     <img 
-                      src={posterpath} 
+                      src={posterpath}
+                      hidden={!posterpath}
+                      onError={event => { event.currentTarget.hidden = true; }}
                       alt={movie.title}
                       className="movie-row-poster"
                       draggable="false"
@@ -188,7 +182,7 @@ const Search = ({ keyword }) => {
                     <div className="movie-row-overlay">
                       <h6 className="movie-row-title">{movie.title}</h6>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -216,21 +210,19 @@ const Search = ({ keyword }) => {
                 
                 const posterpath = show.poster_path 
                   ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
-                  : 'https://placehold.co/500x750/2a2a2a/FFFFFF?text=No+Poster';
+                  : undefined;
                 
                 return (
-                  <div 
+                  <Link
                     key={show.id}
                     className="movie-row-card"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      navigate(`/tv/${show.id}`);
-                    }}
-                    style={{ cursor: 'pointer', position: 'relative', zIndex: 10 }}
+                    to={`/tv/${show.id}`}
                   >
+                    <span className="search-poster-fallback" aria-hidden="true">No poster available</span>
                     <img 
-                      src={posterpath} 
+                      src={posterpath}
+                      hidden={!posterpath}
+                      onError={event => { event.currentTarget.hidden = true; }}
                       alt={show.name}
                       className="movie-row-poster"
                       draggable="false"
@@ -238,7 +230,7 @@ const Search = ({ keyword }) => {
                     <div className="movie-row-overlay">
                       <h6 className="movie-row-title">{show.name}</h6>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

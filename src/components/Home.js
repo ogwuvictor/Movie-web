@@ -21,6 +21,7 @@ import CDrama from './CDrama';
 import KDrama from './KDrama';
 import SADrama from './SADrama';
 import NollywoodMovies from './NollywoodMovies';
+import './Home.css';
 
 /**
  * Home Component
@@ -34,12 +35,12 @@ import NollywoodMovies from './NollywoodMovies';
  */
 const Home = ({title}) => {
     return ( 
-        <div>
+        <div className="home-page">
             {/* Hero section with main call-to-action */}
             <Hero title="Home"/>
             
-            <div className="container">
-                {/* Genre Dropdown Section */}
+            <div className="container home-content">
+                {/* Swipeable genre buttons */}
                 <div className="section-header mb-4">
                     <h2 className="section-title">Browse by Genre</h2>
                     <p className="text-secondary">Choose your favorite movie genre to discover new films</p>

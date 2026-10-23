@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { processProviders, generateRedirectUrl } from '../utils/providerLinkService';
+import StreamingModal from './StreamingModal';
+import { validateSelection } from '../streaming/streamingServers';
 
 const MovieDetails = () => {
   const { id } = useParams();
@@ -10,28 +12,39 @@ const MovieDetails = () => {
   const [posterPath, setPosterPath] = useState('');
   const [backDrop, setBackDrop] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadedFor, setLoadedFor] = useState(null);
   const [error, setError] = useState(null);
   const [watchProviders, setWatchProviders] = useState(null);
   const [processedProviders, setProcessedProviders] = useState([]);
   const [showProvidersModal, setShowProvidersModal] = useState(false);
+  const [showStreamingModal, setShowStreamingModal] = useState(false);
   const [similarMovies, setSimilarMovies] = useState([]);
   const [recommendedMovies, setRecommendedMovies] = useState([]);
   const [publicDomainData, setPublicDomainData] = useState(null);
 
   useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    setShowProvidersModal(false);
+    setShowStreamingModal(false);
+    setPublicDomainData(null);
+    setProcessedProviders([]);
     const fetchMovieDetails = async () => {
       setLoading(true);
       setError(null);
       
       try {
+        validateSelection({ tmdbId: id, mediaType: 'movie' });
         const movieDetailUrl = `https://api.themoviedb.org/3/movie/${id}?api_key=8f666adc99ee1f6168974514ff6d951a`;
-        const response = await fetch(movieDetailUrl);
+        const response = await fetch(movieDetailUrl, { signal: controller.signal });
         
         if (!response.ok) {
           throw new Error(`Failed to fetch movie details: ${response.status}`);
         }
         
         const data = await response.json();
+        if (!active) return;
+        if (Number(data.id) !== Number(id)) throw new Error('Movie information does not match the selected movie. Please reload and try again.');
         setMovieDetails(data);
         setPosterPath(data.poster_path 
           ? `https://image.tmdb.org/t/p/w780${data.poster_path}`
@@ -44,21 +57,24 @@ const MovieDetails = () => {
 
         // Check if movie is public domain via PHP API
         try {
-          const checkResponse = await fetch(`http://localhost:8000/api/check.php?tmdb_id=${id}`);
+          const checkResponse = await fetch(`http://localhost:8000/api/check.php?tmdb_id=${id}`, { signal: controller.signal });
           const checkData = await checkResponse.json();
+          if (!active) return;
           
           if (checkData.success && checkData.is_public_domain) {
             setPublicDomainData(checkData.data);
           }
         } catch (error) {
+          if (!active || error.name === 'AbortError') return;
           console.log('Public domain check failed (backend may not be running):', error);
         }
 
         // Fetch watch providers
         const watchProvidersUrl = `https://api.themoviedb.org/3/movie/${id}/watch/providers?api_key=8f666adc99ee1f6168974514ff6d951a`;
-        const providersResponse = await fetch(watchProvidersUrl);
+        const providersResponse = await fetch(watchProvidersUrl, { signal: controller.signal });
         if (providersResponse.ok) {
           const providersData = await providersResponse.json();
+          if (!active) return;
           setWatchProviders(providersData.results);
           
           // Process providers to get supported ones with custom URLs
@@ -68,33 +84,36 @@ const MovieDetails = () => {
 
         // Fetch similar movies
         const similarMoviesUrl = `https://api.themoviedb.org/3/movie/${id}/similar?api_key=8f666adc99ee1f6168974514ff6d951a`;
-        const similarResponse = await fetch(similarMoviesUrl);
+        const similarResponse = await fetch(similarMoviesUrl, { signal: controller.signal });
         if (similarResponse.ok) {
           const similarData = await similarResponse.json();
+          if (!active) return;
           setSimilarMovies(similarData.results?.slice(0, 10) || []);
         }
 
         // Fetch recommended movies
         const recommendedMoviesUrl = `https://api.themoviedb.org/3/movie/${id}/recommendations?api_key=8f666adc99ee1f6168974514ff6d951a`;
-        const recommendedResponse = await fetch(recommendedMoviesUrl);
+        const recommendedResponse = await fetch(recommendedMoviesUrl, { signal: controller.signal });
         if (recommendedResponse.ok) {
           const recommendedData = await recommendedResponse.json();
+          if (!active) return;
           setRecommendedMovies(recommendedData.results?.slice(0, 10) || []);
         }
       } catch (err) {
-        setError(err.message);
+        if (active && err.name !== 'AbortError') setError(err.message);
       } finally {
-        setLoading(false);
+        if (active) { setLoadedFor(id); setLoading(false); }
       }
     };
 
     if (id) {
       fetchMovieDetails();
     }
+    return () => { active = false; controller.abort(); };
   }, [id]);
 
   // Show loading spinner while fetching data
-  if (loading) {
+  if (loading || loadedFor !== id) {
     return (
       <div className="movie-details-container">
         <div className="container py-5 text-center">
@@ -176,10 +195,13 @@ const MovieDetails = () => {
                   </span>
                 </div>
                 
-                <div className="netflix-actions mb-4">
+                <div className="netflix-actions movie-actions mb-4">
                   <Link to={`/movietrailers/${id}`} className="netflix-play-btn">
                     <i className="fas fa-play"></i> Play Trailer
                   </Link>
+                  <button type="button" className="netflix-play-btn" onClick={() => setShowStreamingModal(true)}>
+                    <i className="fas fa-play"></i> Watch Now
+                  </button>
                   
                   {publicDomainData ? (
                     // Public Domain: Show Download Button
@@ -331,6 +353,11 @@ const MovieDetails = () => {
           </div>
         </div>
       )}
+      {showStreamingModal && <StreamingModal
+        key={`movie:${id}`}
+        selection={{ tmdbId: movieDetails.id, mediaType: 'movie' }} title={movieDetails.title}
+        runtimeMinutes={movieDetails.runtime}
+        onClose={() => setShowStreamingModal(false)} />}
     </div>
   );
 };

@@ -1,0 +1,28 @@
+.search-page .container.search-content {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: clamp(1rem, 2.5vw, 3rem);
+}
+
+.search-content .movie-row-card { height: 240px; background: #181818; }
+.search-content .movie-row-poster { position: relative; z-index: 1; }
+.search-content .movie-row-poster[hidden] { display: none; }
+.search-content .movie-row-overlay { opacity: 1; z-index: 2; }
+.search-poster-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  color: #aaa;
+  font-size: .8rem;
+  text-align: center;
+}
+.search-content .movie-row-card:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+@media (max-width: 768px) {
+  .search-content .movie-row-card { height: 192px; }
+}
+@media (max-width: 480px) {
+  .search-content .movie-row-card { height: 180px; }
+}

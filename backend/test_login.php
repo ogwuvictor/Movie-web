@@ -1,4 +1,6 @@
 <?php
+// This diagnostic can modify admin credentials; never run it through HTTP.
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 // Test script to debug login issues
 
 require_once 'config.php';

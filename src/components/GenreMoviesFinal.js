@@ -39,7 +39,7 @@ const GenreMovies = () => {
 
   if (loading) {
     return (
-      <div className="container py-5">
+      <div className="container catalog-page py-5">
         <div className="row">
           <div className="col-12">
             <div className="section-header text-center">
@@ -56,7 +56,7 @@ const GenreMovies = () => {
 
   if (error) {
     return (
-      <div className="container py-5">
+      <div className="container catalog-page py-5">
         <div className="row">
           <div className="col-12">
             <div className="section-header text-center">
@@ -71,7 +71,7 @@ const GenreMovies = () => {
   }
 
   return (
-    <div className="container py-5">
+    <div className="container catalog-page py-5">
       <div className="row">
         <div className="col-12">
           {/* Back Button */}
@@ -90,7 +90,7 @@ const GenreMovies = () => {
 
           {/* Movies Grid */}
           {movies.length > 0 ? (
-            <div className="row">
+            <div className="catalog-grid">
               {movies.map((movie) => (
                 <MovieCard key={movie.id} movie={movie} />
               ))}

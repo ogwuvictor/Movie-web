@@ -1,5 +1,17 @@
 # CineHub Backend - Movie Streaming Platform
 
+## Local dashboard and streaming catalog
+
+From the project root in PowerShell, run `./scripts/start-backend.ps1`, then open **http://127.0.0.1:8000/admin/** and use your existing admin credentials. This starts a loopback-only PHP development server with a writable temporary session directory. The configured MySQL database must already be running.
+
+The **Streaming Availability** dashboard link opens `/admin/streaming.php`. You can add, edit, refresh, or remove a TMDB movie's manual provider confirmations, choose available/unavailable, and set expiry. Available records require an explicit confirmation checkbox; the editor does not automatically verify remote video playback.
+
+Records update the shared `public/streaming-availability.json` file and are served live by `GET /api/streaming-availability.php`. POST and DELETE require an authenticated admin session and a CSRF token. The web-server account needs write permission to that catalog's directory and `backend/data` for the write lock. No schema migration is required for this editor.
+
+**The Watch Now visibility restriction was undone.** This catalog editor does not hide Watch Now or filter its server list. The React availability reader is available for future use and defaults to the backend API; `REACT_APP_BACKEND_URL` or `REACT_APP_STREAM_AVAILABILITY_URL` can override its location without exposing private credentials.
+
+To verify the editor locally, run `php scripts/verify-admin-catalog.php` from the project root. It creates a temporary QA admin and synthetic catalog record, tests real login/editing plus authorization and CSRF, then removes the test data. It does not change your existing admin account.
+
 ## Overview
 
 PHP-based backend with MySQL database for managing public domain movies, analytics, and optimization features. Includes comprehensive admin panel and RESTful API.
