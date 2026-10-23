@@ -63,6 +63,8 @@ if (!username?.startsWith('catalog_qa_') || !password) throw Error('Disposable Q
     assert.equal((await mutate('/api/movies.php', { title: 'x'.repeat(33000) })).status(), 413);
     assert.equal((await mutate('/api/movies.php', { tmdb_id: 2147480000, title: 'QA', download_url: 'javascript:alert(1)' })).status(), 422);
     assert.equal((await mutate('/api/performance.php?type=feature_flags', { feature_name: 'bad', rollout_percentage: 101 }, csrf, 'PUT')).status(), 422);
+    assert.equal((await mutate('/api/performance.php?type=feature_flags', { feature_name: 'missing_qa_flag', is_enabled: true }, csrf, 'PUT')).status(), 404);
+    assert.equal((await anonymous.request.patch(base + '/api/analytics.php')).status(), 405);
     assert.equal((await anonymous.request.post(base + '/api/analytics.php', { data: { event_type: 'search', session_id: { bad: true } } })).status(), 422);
 
     // Store an HTML-looking title and verify the existing server-rendered table escapes it.
@@ -70,6 +72,9 @@ if (!username?.startsWith('catalog_qa_') || !password) throw Error('Disposable Q
     const created = await mutate('/api/movies.php', { tmdb_id: 2147480000, title, download_url: 'https://example.invalid/qa.mp4', source: 'Security QA' });
     assert.equal(created.status(), 200, await created.text());
     movieId = (await created.json()).data.id;
+    assert.equal((await mutate('/api/movies.php?id=' + movieId, { title }, csrf, 'PUT')).status(), 200);
+    assert.equal((await mutate('/api/movies.php?id=' + movieId, { tmdb_id: 2147480001 }, csrf, 'PUT')).status(), 200);
+    assert.equal((await (await context.request.get(base + '/api/movies.php?id=' + movieId)).json()).data.tmdb_id, 2147480001);
     await page.reload();
     await page.getByRole('cell', { name: title, exact: true }).waitFor();
     assert.equal(await page.evaluate(() => window.securityXss), undefined);

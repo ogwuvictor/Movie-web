@@ -119,6 +119,9 @@ elseif ($method === 'PUT') {
             if (!isset($input['feature_name'])) {
                 sendErrorResponse('feature_name is required');
             }
+            $existing = $pdo->prepare('SELECT id FROM optimization_feature_flags WHERE feature_name = ?');
+            $existing->execute([$input['feature_name']]);
+            if (!$existing->fetch()) sendErrorResponse('Feature flag not found', 404);
             
             $fields = [];
             $values = [];
@@ -146,7 +149,7 @@ elseif ($method === 'PUT') {
             $stmt = $pdo->prepare($sql);
             $stmt->execute($values);
             
-            sendSuccessResponse(null, 'Feature flag updated');
+            sendSuccessResponse(null, 'Stored feature flag updated');
         }
         else {
             sendErrorResponse('Invalid type for PUT request');
@@ -210,6 +213,7 @@ elseif ($method === 'GET') {
 }
 
 // Helper functions
+if (!in_array($method, ['GET', 'POST', 'PUT'], true)) sendErrorResponse('Method not allowed', 405);
 function getApiMetrics($pdo) {
     $recent = $pdo->query("
         SELECT endpoint, method, AVG(response_time_ms) as avg_response, 

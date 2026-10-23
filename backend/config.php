@@ -24,6 +24,7 @@ try {
     ];
     
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+    $pdo->exec("SET time_zone = '+00:00'");
 } catch (PDOException $e) {
     error_log('Database connection failed: ' . $e->getMessage());
     securityJson(['error' => 'Database unavailable.'], 503);
@@ -44,5 +45,5 @@ function sendErrorResponse($message, $statusCode = 400) {
 
 // Helper function for success responses
 function sendSuccessResponse($data, $message = 'Success') {
-    sendJsonResponse(['success' => true, 'message' => $message, 'data' => $data]);
+    sendJsonResponse(['success' => true, 'message' => $message, 'data' => $data, 'generatedAt' => gmdate('c'), 'timezone' => 'UTC']);
 }

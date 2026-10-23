@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
 CREATE TABLE IF NOT EXISTS analytics_page_views (
     id INT AUTO_INCREMENT PRIMARY KEY,
     session_id VARCHAR(100),
-    page_type ENUM('home', 'movie', 'tv', 'search', 'trailer') NOT NULL,
+    page_type ENUM('home', 'movie', 'tv', 'search', 'trailer', 'about', 'genre') NOT NULL,
     content_id INT,
     content_type ENUM('movie', 'tv') DEFAULT NULL,
     referrer VARCHAR(255),

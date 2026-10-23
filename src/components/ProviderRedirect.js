@@ -27,7 +27,7 @@ const ProviderRedirect = () => {
       return;
     }
 
-    // Log the click for analytics
+    // Only count a real configured outbound link; allow delivery during navigation.
     logClick(provider, title, tmdbId);
 
     // Build the final provider URL

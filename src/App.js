@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { trackPageView } from './utils/analyticsService';
 
 import './App.css';
 import Home from './components/Home';
@@ -10,6 +11,7 @@ import TVShows from './components/TVShows';
 import TVShowDetails from './components/TVShowDetails';
 import TVShowTrailers from './components/TVShowTrailers';
 import {
+  useLocation,
   Routes,
   Route,
   Link,
@@ -22,6 +24,17 @@ import './Mobile.css';
 
 
 function App() {
+  const location = useLocation();
+  const recordedNavigation = useRef(null);
+  useEffect(() => {
+    if (recordedNavigation.current === location.key) return;
+    recordedNavigation.current = location.key;
+    const path = location.pathname;
+    const detail = path.match(/^\/(moviedetails|tv|movietrailers|tvtrailers)\/(\d+)$/);
+    const page_type = detail ? detail[1].includes('trailer') ? 'trailer' : detail[1] === 'tv' ? 'tv' : 'movie'
+      : path === '/search' ? 'search' : path === '/about' ? 'about' : path.startsWith('/tv/') ? 'tv' : path.startsWith('/genre/') ? 'genre' : path === '/' ? 'home' : null;
+    if (page_type) trackPageView({ page_type, content_id: detail ? Number(detail[2]) : null, content_type: detail ? detail[1].startsWith('tv') ? 'tv' : 'movie' : null });
+  }, [location.key, location.pathname]);
   const [searchText, setSearchText] = useState('')
   const [searchResult, setSearchResult] = useState ([])
 

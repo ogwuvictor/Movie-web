@@ -1,5 +1,6 @@
 import { safeExternalUrl } from '../utils/safeExternalUrl';
 import { API_BASE_URL } from '../utils/apiConfig';
+import { trackProviderClick } from '../utils/analyticsService';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
@@ -329,6 +330,7 @@ const MovieDetails = () => {
                         <a
                           key={provider.key}
                           href={redirectUrl}
+                          onClick={() => trackProviderClick({ content_id: Number(id), content_type: 'movie', content_title: movieDetails.title, provider: provider.key, provider_url: provider.url })}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="btn btn-outline-light text-start d-flex align-items-center"

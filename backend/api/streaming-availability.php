@@ -17,6 +17,7 @@ if ($method === 'GET') {
     try {
         $catalog = readStreamingCatalog();
         $catalog['movies'] = (object)$catalog['movies'];
+        $catalog['generatedAt'] = gmdate('c');
         catalogResponse($catalog);
     } catch (Throwable $error) {
         catalogResponse(['error' => 'The availability catalog could not be read.'], 503);

@@ -225,13 +225,14 @@ $movies = $stmt->fetchAll();
         </div>
 
         <!-- Analytics Section -->
-        <div id="analyticsSection">
+        <div id="analyticsSection" class="d-none">
+            <p id="analyticsStatus" class="small text-muted" role="status">Not refreshed yet.</p>
             <div class="row mb-4">
                 <div class="col-md-3">
                     <div class="card text-center">
                         <div class="card-body">
                             <h3 class="text-success" id="totalPageViews">-</h3>
-                            <small>Total Page Views</small>
+                            <small>Recorded Page Views</small>
                         </div>
                     </div>
                 </div>
@@ -255,7 +256,7 @@ $movies = $stmt->fetchAll();
                     <div class="card text-center">
                         <div class="card-body">
                             <h3 class="text-info" id="totalEngagement">-</h3>
-                            <small>User Engagement</small>
+                            <small>Recorded Engagement Events</small>
                         </div>
                     </div>
                 </div>
@@ -296,9 +297,10 @@ $movies = $stmt->fetchAll();
 
         <!-- Performance Section -->
         <div id="performanceSection" class="d-none">
+            <p id="performanceStatus" class="small text-muted" role="status">Not refreshed yet.</p>
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5>API Performance Metrics (Last Hour)</h5>
+                    <h5>Recorded Client API Metrics (Last Hour)</h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -349,6 +351,7 @@ $movies = $stmt->fetchAll();
 
         <!-- Optimization Section -->
         <div id="optimizationSection" class="d-none">
+            <p id="optimizationStatus" class="small text-muted" role="status">Not refreshed yet.</p>
             <div class="card">
                 <div class="card-header">
                     <h5>Feature Flags</h5>
@@ -457,7 +460,17 @@ $movies = $stmt->fetchAll();
         function adminFetch(url, options = {}) {
             const headers = new Headers(options.headers || {});
             if (!['GET', 'HEAD'].includes((options.method || 'GET').toUpperCase())) headers.set('X-CSRF-Token', csrfToken);
-            return window.fetch(url, { ...options, headers });
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10000);
+            return window.fetch(url, { cache: 'no-store', ...options, headers, signal: controller.signal }).then(async response => {
+                if (!(response.headers.get('Content-Type') || '').includes('application/json')) throw new Error('Unexpected server response. Reload and check your admin sign-in.');
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.error || 'Dashboard request failed (' + response.status + ')');
+                }
+                if (payload.error || payload.success === false) throw new Error(payload.error || 'Request failed');
+                return { json: async () => payload };
+            }).finally(() => clearTimeout(timeout));
         }
         function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char])); }
         document.addEventListener('click', event => {
@@ -475,8 +488,23 @@ $movies = $stmt->fetchAll();
         const modalTitle = document.getElementById('movieModalTitle');
         const movieForm = document.getElementById('movieForm');
 
+        function dashboardStatus(section, message) { document.getElementById(section + 'Status').textContent = message; }
+        function unavailable(section, error) {
+            dashboardStatus(section, 'Unavailable: ' + error.message + '. Previous values have been cleared.');
+            if (section === 'analytics') {
+                ['totalPageViews','totalProviderClicks','totalSearches','totalEngagement'].forEach(id => document.getElementById(id).textContent = 'Unavailable');
+                ['topContentList','pageViewsByType','providerClicksByProvider'].forEach(id => document.getElementById(id).textContent = 'Data unavailable');
+            } else (section === 'performance' ? ['apiMetricsTable','cacheMetricsTable'] : ['featureFlagsTable']).forEach(id => {
+                document.getElementById(id).innerHTML = '<tr><td colspan="6">Data unavailable</td></tr>';
+            });
+        }
+        function refreshed(section, generatedAt) { dashboardStatus(section, 'Last refreshed: ' + (Number.isFinite(Date.parse(generatedAt)) ? new Date(generatedAt).toISOString() : 'server time unavailable') + '. Counts describe recorded client events, not unique users; blocked or failed tracking is not included.'); }
+        const refreshVersions = { analytics: 0, performance: 0, optimization: 0 };
+        let visibleSection = 'movies';
+        setInterval(() => { if (document.hidden) return; if (visibleSection === 'analytics') loadAnalyticsData(); else if (visibleSection === 'performance') loadPerformanceData(); else if (visibleSection === 'optimization') loadOptimizationData(); }, 60000);
         // Section switching
         function showSection(section, link) {
+            visibleSection = section;
             // Hide all sections
             document.getElementById('moviesSection').classList.add('d-none');
             document.getElementById('analyticsSection').classList.add('d-none');
@@ -512,9 +540,12 @@ $movies = $stmt->fetchAll();
 
         // Load analytics data
         function loadAnalyticsData() {
+            const revision = ++refreshVersions.analytics;
+            dashboardStatus('analytics', 'Refreshing recorded data...');
             adminFetch('../api/analytics.php?dashboard=true')
                 .then(response => response.json())
                 .then(data => {
+                    if (revision !== refreshVersions.analytics) return;
                     if (data.success) {
                         document.getElementById('totalPageViews').textContent = data.data.page_views.total.toLocaleString();
                         document.getElementById('totalProviderClicks').textContent = data.data.provider_clicks.total.toLocaleString();
@@ -525,12 +556,12 @@ $movies = $stmt->fetchAll();
                         let topContentHtml = '<ul class="list-group">';
                         data.data.top_content.forEach(item => {
                             topContentHtml += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>${escapeHtml(item.content_type.toUpperCase())} #${escapeHtml(item.content_id)}</span>
+                                <span>${escapeHtml(String(item.content_type || 'unknown').toUpperCase())} #${escapeHtml(item.content_id)}</span>
                                 <span class="badge bg-primary">${escapeHtml(item.views)} views</span>
                             </li>`;
                         });
                         topContentHtml += '</ul>';
-                        document.getElementById('topContentList').innerHTML = topContentHtml || 'No data available';
+                        document.getElementById('topContentList').innerHTML = data.data.top_content.length ? topContentHtml : 'No recorded content views';
                         
                         // Page views by type
                         let pageViewsHtml = '<ul class="list-group">';
@@ -541,7 +572,7 @@ $movies = $stmt->fetchAll();
                             </li>`;
                         });
                         pageViewsHtml += '</ul>';
-                        document.getElementById('pageViewsByType').innerHTML = pageViewsHtml || 'No data available';
+                        document.getElementById('pageViewsByType').innerHTML = data.data.page_views.by_page_type.length ? pageViewsHtml : 'No recorded page views';
                         
                         // Provider clicks
                         let providerHtml = '<ul class="list-group">';
@@ -552,20 +583,23 @@ $movies = $stmt->fetchAll();
                             </li>`;
                         });
                         providerHtml += '</ul>';
-                        document.getElementById('providerClicksByProvider').innerHTML = providerHtml || 'No data available';
+                        document.getElementById('providerClicksByProvider').innerHTML = data.data.provider_clicks.by_provider.length ? providerHtml : 'No recorded provider clicks';
+                        refreshed('analytics', data.generatedAt);
                     }
                 })
                 .catch(error => {
-                    console.error('Error loading analytics:', error);
-                    document.getElementById('totalPageViews').textContent = 'Error';
+                    if (revision === refreshVersions.analytics) unavailable('analytics', error);
                 });
         }
 
         // Load performance data
         function loadPerformanceData() {
+            const revision = ++refreshVersions.performance;
+            dashboardStatus('performance', 'Refreshing recorded metrics...');
             adminFetch('../api/performance.php?type=dashboard')
                 .then(response => response.json())
                 .then(data => {
+                    if (revision !== refreshVersions.performance) return;
                     if (data.success) {
                         // API metrics
                         let apiHtml = '';
@@ -589,26 +623,31 @@ $movies = $stmt->fetchAll();
                                 <td>${escapeHtml(item.cache_type)}</td>
                                 <td>${escapeHtml(item.hit_count)}</td>
                                 <td>${escapeHtml(item.miss_count)}</td>
-                                <td>${escapeHtml(Number(item.hit_rate || 0).toFixed(1))}%</td>
-                                <td>${escapeHtml(item.size_bytes ? (item.size_bytes / 1024).toFixed(2) + ' KB' : 'N/A')}</td>
+                                <td>${item.hit_rate == null ? 'N/A' : escapeHtml(Number(item.hit_rate).toFixed(1)) + '%'}</td>
+                                <td>${item.size_bytes == null ? 'N/A' : escapeHtml(Number(item.size_bytes).toLocaleString())}</td>
                             </tr>`;
                         });
-                        document.getElementById('cacheMetricsTable').innerHTML = cacheHtml || '<tr><td colspan="6" class="text-center">No data available</td></tr>';
+                        document.getElementById('cacheMetricsTable').innerHTML = cacheHtml || '<tr><td colspan="6" class="text-center">No recorded cache metrics</td></tr>';
+                        refreshed('performance', data.generatedAt);
                     }
                 })
                 .catch(error => {
-                    console.error('Error loading performance:', error);
+                    if (revision === refreshVersions.performance) unavailable('performance', error);
                 });
         }
 
         // Load optimization data
         function loadOptimizationData() {
+            const revision = ++refreshVersions.optimization;
+            dashboardStatus('optimization', 'Refreshing stored configuration...');
             adminFetch('../api/performance.php?type=feature_flags')
                 .then(response => response.json())
                 .then(data => {
+                    if (revision !== refreshVersions.optimization) return;
                     if (data.success) {
                         let flagsHtml = '';
                         data.data.forEach(flag => {
+                            flag.is_enabled = flag.is_enabled === true || flag.is_enabled === 1 || flag.is_enabled === '1';
                             flagsHtml += `<tr>
                                 <td>${escapeHtml(flag.feature_name)}</td>
                                 <td>
@@ -625,11 +664,12 @@ $movies = $stmt->fetchAll();
                                 </td>
                             </tr>`;
                         });
-                        document.getElementById('featureFlagsTable').innerHTML = flagsHtml || '<tr><td colspan="5" class="text-center">No data available</td></tr>';
+                        document.getElementById('featureFlagsTable').innerHTML = flagsHtml || '<tr><td colspan="5" class="text-center">No stored feature flags</td></tr>';
+                        dashboardStatus('optimization', 'Stored configuration refreshed ' + (data.generatedAt || '(server time unavailable)') + '. These flags are not connected to frontend behavior.');
                     }
                 })
                 .catch(error => {
-                    console.error('Error loading optimization:', error);
+                    if (revision === refreshVersions.optimization) unavailable('optimization', error);
                 });
         }
 

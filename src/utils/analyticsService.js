@@ -11,10 +11,11 @@
 import { API_BASE_URL } from './apiConfig';
 
 // Generate or retrieve session ID
-let sessionId = sessionStorage.getItem('analytics_session_id');
+let sessionId;
+try { sessionId = sessionStorage.getItem('analytics_session_id'); } catch { /* Storage can be blocked. */ }
 if (!sessionId) {
-  sessionId = 'sess_' + Math.random().toString(36).substr(2, 9) + Date.now();
-  sessionStorage.setItem('analytics_session_id', sessionId);
+  sessionId = 'sess_' + (window.crypto?.randomUUID?.() || Math.random().toString(36).slice(2) + Date.now());
+  try { sessionStorage.setItem('analytics_session_id', sessionId); } catch { /* Tracking is optional. */ }
 }
 
 /**
@@ -24,11 +25,8 @@ const getDeviceInfo = () => {
   const ua = navigator.userAgent;
   let deviceType = 'desktop';
   
-  if (/Mobile|Android|iP(hone|od)/i.test(ua)) {
-    deviceType = 'mobile';
-  } else if (/Tablet|iPad/i.test(ua)) {
-    deviceType = 'tablet';
-  }
+  if (/Tablet|iPad|Android(?!.*Mobile)/i.test(ua)) deviceType = 'tablet';
+  else if (/Mobile|iP(hone|od)/i.test(ua)) deviceType = 'mobile';
   
   return {
     deviceType,
@@ -55,7 +53,7 @@ export const trackPageView = async (data) => {
       page_type: data.page_type || 'unknown',
       content_id: data.content_id || null,
       content_type: data.content_type || null,
-      referrer: document.referrer || null,
+      referrer: document.referrer ? new URL(document.referrer).origin : null,
       user_agent: deviceInfo.userAgent,
       ip_address: null, // Backend will capture this
       device_type: deviceInfo.deviceType,
@@ -66,6 +64,7 @@ export const trackPageView = async (data) => {
     
     await fetch(`${API_BASE_URL}/analytics.php`, {
       method: 'POST',
+      keepalive: true,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
@@ -104,6 +103,7 @@ export const trackProviderClick = async (data) => {
     
     await fetch(`${API_BASE_URL}/analytics.php`, {
       method: 'POST',
+      keepalive: true,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
@@ -138,6 +138,7 @@ export const trackSearch = async (data) => {
     
     await fetch(`${API_BASE_URL}/analytics.php`, {
       method: 'POST',
+      keepalive: true,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
@@ -172,6 +173,7 @@ export const trackEngagement = async (data) => {
     
     await fetch(`${API_BASE_URL}/analytics.php`, {
       method: 'POST',
+      keepalive: true,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
@@ -221,6 +223,7 @@ export const trackPlayback = async (data) => {
     
     await fetch(`${API_BASE_URL}/analytics.php`, {
       method: 'POST',
+      keepalive: true,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
@@ -247,13 +250,14 @@ export const trackApiPerformance = async (data) => {
       endpoint: data.endpoint,
       method: data.method || 'GET',
       response_time_ms: data.response_time_ms,
-      status_code: data.status_code || 200,
+      status_code: data.status_code,
       cache_hit: data.cache_hit || false,
       error_message: data.error_message || null
     };
     
-    await fetch(`${API_BASE_URL}/performance.php`, {
+    await fetch(`${API_BASE_URL}/performance.php?type=api_metric`, {
       method: 'POST',
+      keepalive: true,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });

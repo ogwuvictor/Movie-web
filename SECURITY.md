@@ -1,5 +1,7 @@
 # Security review — 23 October 2026
 
+The later Cloudflare Worker + D1 path is documented in [CLOUDFLARE_DEPLOYMENT.md](CLOUDFLARE_DEPLOYMENT.md). It uses Cloudflare Access with verified JWTs and protected `/admin/api/*` routes instead of PHP password sessions. The PHP-specific session tests and configuration below apply to the retained PHP backend. Local fixtures do not verify live Access sign-in or deployed account policies.
+
 This update hardens the application; it is not a guarantee of 100% security or an independent penetration test. Production infrastructure and third-party providers are outside the local test environment.
 
 ## Changes

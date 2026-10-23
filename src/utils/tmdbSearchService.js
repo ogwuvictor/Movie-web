@@ -1,3 +1,4 @@
+import { trackApiPerformance } from './analyticsService';
 /**
  * TMDB Search Service
  * 
@@ -80,6 +81,7 @@ export async function searchMulti(query, options = {}) {
     console.log('🔍 TMDB Multi-Search:', query);
     console.log('📡 API URL:', url);
 
+    const startedAt = performance.now();
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -88,6 +90,7 @@ export async function searchMulti(query, options = {}) {
       }
     });
 
+    trackApiPerformance({ endpoint: '/tmdb/search/multi', method: 'GET', response_time_ms: Math.max(0, Math.round(performance.now() - startedAt)), status_code: response.status, cache_hit: false });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }

@@ -27,3 +27,9 @@ yarn-error.log*
 .env
 .env.*
 !.env.example
+
+# Cloudflare local credentials and generated assets
+.dev.vars*
+.wrangler/
+cloudflare/generated/
+cloudflare/*.local.json

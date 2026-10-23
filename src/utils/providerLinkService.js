@@ -245,9 +245,9 @@ export const processProviders = (tmdbProviders, title) => {
  * @param {number} tmdbId - TMDB ID
  * @returns {string} Redirect URL
  */
-export const generateRedirectUrl = (providerKey, title, tmdbId) => {
+export const generateRedirectUrl = (providerKey, title, tmdbId, mediaType = 'movie') => {
   const encodedTitle = encodeURIComponent(title);
-  return `/out/${providerKey}?title=${encodedTitle}&id=${tmdbId}`;
+  return `/out/${providerKey}?title=${encodedTitle}&id=${tmdbId}${mediaType === 'tv' ? '&type=tv' : ''}`;
 };
 
 export default {

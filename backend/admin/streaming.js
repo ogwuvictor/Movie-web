@@ -5,24 +5,32 @@
     const message = document.getElementById('catalogMessage');
     const fields = { id: document.getElementById('catalogTmdbId'), title: document.getElementById('catalogTitle'), available: document.getElementById('catalogAvailable'), minutes: document.getElementById('catalogValidity'), confirmed: document.getElementById('catalogConfirmed') };
     const names = { vidlink: 'VidLink Pro', videasy: 'Videasy', vidfast: 'Vidfast', movies111: '111Movies' };
+    let loadVersion = 0;
     const notify = (text, failed = false) => { message.textContent = text; message.className = `alert ${failed ? 'alert-danger' : 'alert-success'} mb-3`; };
     const date = value => Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString() : 'Unknown';
     async function request(options = {}) {
-        const response = await fetch(endpoint, { cache: 'no-store', ...options });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Catalog request failed.');
-        return data;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        try {
+            const response = await fetch(endpoint, { cache: 'no-store', ...options, signal: controller.signal });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Catalog request failed.');
+            return data;
+        } finally { clearTimeout(timeout); }
     }
     function mutation(method, body) {
         return request({ method, headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content }, body: JSON.stringify(body) });
     }
     async function load() {
+        const version = ++loadVersion;
         try {
             const catalog = await request();
+            if (version !== loadVersion) return;
+            const serverTime = Number.isFinite(Date.parse(catalog.generatedAt)) ? Date.parse(catalog.generatedAt) : Date.now();
             rows.replaceChildren();
             for (const [id, record] of Object.entries(catalog.movies || {})) {
                 const tr = document.createElement('tr');
-                const expired = !Number.isFinite(Date.parse(record.expiresAt)) || Date.parse(record.expiresAt) <= Date.now();
+                const expired = !Number.isFinite(Date.parse(record.expiresAt)) || Date.parse(record.expiresAt) <= serverTime;
                 for (const text of [id, record.title || 'Untitled', expired ? 'Expired' : record.available ? 'Available' : 'Unavailable', (record.serverIds || []).map(server => names[server] || server).join(', '), date(record.checkedAt), date(record.expiresAt)]) {
                     const td = document.createElement('td'); td.textContent = text; tr.append(td);
                 }
@@ -43,7 +51,7 @@
                 actions.append(edit, remove); tr.append(actions); rows.append(tr);
             }
             if (!rows.children.length) { const tr = rows.insertRow(); const td = tr.insertCell(); td.colSpan = 7; td.textContent = 'No availability records yet.'; }
-        } catch (error) { notify(error.message, true); rows.replaceChildren(); }
+        } catch (error) { if (version === loadVersion) { notify(error.message, true); rows.replaceChildren(); } }
     }
     form.addEventListener('submit', async event => {
         event.preventDefault();
@@ -56,6 +64,6 @@
         finally { save.disabled = false; }
     });
     document.getElementById('catalogRefresh').addEventListener('click', load);
-    setInterval(load, 60000);
+    setInterval(() => { if (!document.hidden) load(); }, 60000);
     load();
 })();

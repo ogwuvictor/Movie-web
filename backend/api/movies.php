@@ -57,6 +57,7 @@ if ($method === 'GET') {
             sendSuccessResponse($movies);
         }
     } catch (PDOException $e) {
+        if ($e->getCode() === '23000') sendErrorResponse('A movie with this TMDB ID already exists.', 409);
         error_log('API database failure: ' . $e->getMessage());
         sendErrorResponse('Database operation unavailable.', 503);
     }
@@ -97,6 +98,7 @@ elseif ($method === 'POST') {
         
         sendSuccessResponse(['id' => $pdo->lastInsertId()], 'Movie added successfully');
     } catch (PDOException $e) {
+        if ($e->getCode() === '23000') sendErrorResponse('A movie with this TMDB ID already exists.', 409);
         error_log('API database failure: ' . $e->getMessage());
         sendErrorResponse('Database operation unavailable.', 503);
     }
@@ -116,6 +118,10 @@ elseif ($method === 'PUT') {
         // Build update query dynamically
         $fields = [];
         $values = [];
+        if (isset($input['tmdb_id'])) {
+            $fields[] = 'tmdb_id = ?';
+            $values[] = $input['tmdb_id'];
+        }
         
         if (isset($input['title'])) {
             $fields[] = 'title = ?';
@@ -147,11 +153,15 @@ elseif ($method === 'PUT') {
         $stmt->execute($values);
         
         if ($stmt->rowCount() === 0) {
-            sendErrorResponse('Movie not found or no changes made', 404);
+            $existing = $pdo->prepare('SELECT id FROM public_domain_movies WHERE id = ?');
+            $existing->execute([$id]);
+            if (!$existing->fetch()) sendErrorResponse('Movie not found', 404);
+            sendSuccessResponse(null, 'No changes needed');
         }
         
         sendSuccessResponse(null, 'Movie updated successfully');
     } catch (PDOException $e) {
+        if ($e->getCode() === '23000') sendErrorResponse('A movie with this TMDB ID already exists.', 409);
         error_log('API database failure: ' . $e->getMessage());
         sendErrorResponse('Database operation unavailable.', 503);
     }
@@ -173,6 +183,7 @@ elseif ($method === 'DELETE') {
         
         sendSuccessResponse(null, 'Movie deleted successfully');
     } catch (PDOException $e) {
+        if ($e->getCode() === '23000') sendErrorResponse('A movie with this TMDB ID already exists.', 409);
         error_log('API database failure: ' . $e->getMessage());
         sendErrorResponse('Database operation unavailable.', 503);
     }

@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { StrictMode } from 'react';
 import App from './App';
 
 test('existing About and Home navigation works with the patched router', async () => {
@@ -8,12 +9,14 @@ test('existing About and Home navigation works with the patched router', async (
   window.matchMedia = jest.fn(() => ({ matches: false, addEventListener: jest.fn(), removeEventListener: jest.fn() }));
   global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [], genres: [] }) });
   try {
-    await act(async () => { render(<MemoryRouter initialEntries={['/about']}><App /></MemoryRouter>); });
+    await act(async () => { render(<StrictMode><MemoryRouter initialEntries={['/about']}><App /></MemoryRouter></StrictMode>); });
     expect(screen.getByRole('heading', { name: 'About CineHub', exact: true })).toBeInTheDocument();
     await act(async () => { fireEvent.click(screen.getAllByRole('link', { name: 'Browse Movies', exact: true })[0]); });
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Discover Amazing Movies', exact: true })).toBeInTheDocument());
     await act(async () => { fireEvent.click(screen.getByRole('link', { name: 'About', exact: true })); });
     await waitFor(() => expect(screen.getByRole('heading', { name: 'About CineHub', exact: true })).toBeInTheDocument());
+    const pageEvents = global.fetch.mock.calls.filter(([url, options]) => url.endsWith('/analytics.php') && options?.method === 'POST').map(([, options]) => JSON.parse(options.body));
+    expect(pageEvents.map(event => event.page_type)).toEqual(['about', 'home', 'about']);
   } finally {
     global.fetch = previousFetch;
     window.matchMedia = previousMatchMedia;

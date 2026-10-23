@@ -194,6 +194,7 @@ elseif ($method === 'GET') {
 }
 
 // Helper functions for analytics stats
+if (!in_array($method, ['GET', 'POST'], true)) sendErrorResponse('Method not allowed', 405);
 function getPageViewStats($pdo) {
     $total = $pdo->query("SELECT COUNT(*) as count FROM analytics_page_views")->fetch();
     $byPageType = $pdo->query("SELECT page_type, COUNT(*) as count FROM analytics_page_views GROUP BY page_type")->fetchAll();

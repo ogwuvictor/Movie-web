@@ -1,5 +1,7 @@
 # CineHub - Movie & TV Streaming Platform
 
+For the prepared Cloudflare Worker + D1 deployment path, read [CLOUDFLARE_DEPLOYMENT.md](CLOUDFLARE_DEPLOYMENT.md). Account/database/Access configuration and live acceptance tests are still required before launch. Uploading the React build alone does not deploy the admin backend.
+
 A modern React-based web application for discovering movies and TV shows with comprehensive streaming information, trailers, and provider links.
 
 ## Overview

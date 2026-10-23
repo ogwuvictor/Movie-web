@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { trackProviderClick } from '../utils/analyticsService';
 import { useParams, Link } from 'react-router-dom';
 import { processProviders, generateRedirectUrl } from '../utils/providerLinkService';
 import StreamingModal from './StreamingModal';
@@ -348,11 +349,12 @@ const TVShowDetails = () => {
                 {processedProviders.length > 0 ? (
                   <div className="d-grid gap-3">
                     {processedProviders.map((provider) => {
-                      const redirectUrl = generateRedirectUrl(provider.key, tvDetails.name, id);
+                      const redirectUrl = generateRedirectUrl(provider.key, tvDetails.name, id, 'tv');
                       return (
                         <a
                           key={provider.key}
                           href={redirectUrl}
+                          onClick={() => trackProviderClick({ content_id: Number(id), content_type: 'tv', content_title: tvDetails.name, provider: provider.key, provider_url: provider.url })}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="btn btn-outline-light text-start d-flex align-items-center"

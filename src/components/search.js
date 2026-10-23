@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Hero from './Hero';
 import './Search.css';
 import useAutoScroll from '../hooks/useAutoScroll';
+import { trackSearch } from '../utils/analyticsService';
 import { searchMulti } from '../utils/tmdbSearchService';
 
 /**
@@ -60,6 +61,7 @@ const Search = ({ keyword }) => {
 
   // Fetch search results when keyword changes
   useEffect(() => {
+    let active = true;
     const performSearch = async () => {
       // Requirement #9: Ignore empty input
       if (!keyword || keyword.trim() === '') {
@@ -82,6 +84,8 @@ const Search = ({ keyword }) => {
           page: 1
         });
 
+        if (!active) return;
+        trackSearch({ search_query: keyword.trim(), results_count: searchResults.movies.length + searchResults.tvShows.length });
         // Sort by popularity descending and limit to top 15 results per category
         const sortByPopularity = (a, b) => (b.popularity || 0) - (a.popularity || 0);
         
@@ -91,13 +95,15 @@ const Search = ({ keyword }) => {
           people: []
         });
       } catch (err) {
+        if (!active) return;
         setError('Failed to fetch search results. Please try again.');
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
     performSearch();
+    return () => { active = false; };
   }, [keyword]);
 
   // Calculate total results (excluding people)
