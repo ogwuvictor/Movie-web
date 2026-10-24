@@ -17,6 +17,23 @@ Admin HTML/CSS comes from the existing admin templates. Cloudflare Access replac
 
 ## Account setup required before launch
 
+### Workers Git build configuration
+
+Use Workers Builds with repository `ogwuvictor/Movie-web` and the following settings:
+
+| Setting | Value |
+| --- | --- |
+| Worker name | `cinehub` (matches `wrangler.jsonc`) |
+| Production branch | `main` |
+| Root directory | Repository root (leave the optional field empty) |
+| Build command | `CI=false npm run build:cloudflare` |
+| Deploy command | `npx wrangler@4.152.0 deploy` |
+| Static assets | `build`, already configured in `wrangler.jsonc` |
+
+The build command above uses the Linux build environment's shell syntax. `CI=false` keeps existing CRA lint warnings from becoming build failures; compilation errors still fail. Do not skip dependency installation or use `--legacy-peer-deps`: the lockfile includes the YAML 2 optional peer required by npm 10.9.2. Keep development dependencies installed because they contain the build tools. Workers Builds has no separate Pages output-directory setting. Leave non-production branch builds disabled until their admin hostnames and database isolation are configured.
+
+The Worker name does not configure D1 or admin sign-in. Replace the placeholder D1 database ID and finish the Access steps below before treating deployment as ready. Build variables are separate from Worker runtime secrets; never expose the admin settings through `REACT_APP_*` variables.
+
 1. Install a supported Node version (Node 24 is used locally). From the repo, run `npm ci` and `npm run build:cloudflare`.
 2. Sign in to your own Cloudflare account using `npx wrangler@4.152.0 login`. Never commit an API token or share a password with this project.
 3. Create D1: `npx wrangler@4.152.0 d1 create cinehub`. Put the returned **database_id** into the `DB` entry in `wrangler.jsonc`, replacing the all-zero placeholder. The database ID is an identifier, not an admin password.
