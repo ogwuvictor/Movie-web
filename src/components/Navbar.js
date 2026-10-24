@@ -4,11 +4,13 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import GenreDropdownPortal from './GenreDropdownPortal';
 import TVGenreDropdown from './TVGenreDropdown';
 import { useDebounce } from '../hooks/useDebounce';
+import './NavbarSearch.css';
 
 function Navbar({searchText, setSearchText}){
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [inputValue, setInputValue] = useState(searchText || '');
   const [isPhone, setIsPhone] = useState(() => window.matchMedia('(max-width: 575.98px)').matches);
+  const pendingSearch = useRef(null);
   const drawerRef = useRef(null);
   const toggleRef = useRef(null);
   const navigate = useNavigate();
@@ -52,30 +54,29 @@ function Navbar({searchText, setSearchText}){
     if (window.matchMedia('(max-width: 575.98px)').matches) setIsNavOpen(false);
   }, [location.pathname]);
   
-  // Requirement #8: Add debounce to search input (500ms delay)
   const debouncedSearch = useDebounce(inputValue, 500);
-  
-  // Update parent state when debounced value changes
-  useEffect(() => {
-    setSearchText(debouncedSearch);
-    
-    // Navigate to search page if there's a search term AND we're not already on the search page
-    if (debouncedSearch && debouncedSearch.trim() !== '' && location.pathname !== '/search') {
-      navigate('/search');
-    }
-  }, [debouncedSearch, setSearchText, navigate, location.pathname]);
 
-  // Clear search input when navigating away from search page
+  // Route changes must never submit an old, still-debouncing search.
   useEffect(() => {
-    if (location.pathname !== '/search') {
-      setInputValue('');
-      setSearchText('');
-    }
-  }, [location.pathname, setSearchText]);
+    pendingSearch.current = null;
+    const query = location.pathname === '/search' ? new URLSearchParams(location.search).get('q') || '' : '';
+    setInputValue(query);
+    setSearchText(query);
+  }, [location.pathname, location.search, setSearchText]);
 
-  const updateText = (e) => {
-    const value = e.target.value;
-    setInputValue(value);
+  useEffect(() => {
+    if (pendingSearch.current === null || pendingSearch.current !== debouncedSearch) return;
+    pendingSearch.current = null;
+    const query = debouncedSearch.trim();
+    setSearchText(query);
+    if (query || location.pathname === '/search') {
+      navigate(query ? '/search?q=' + encodeURIComponent(query) : '/search', { replace: location.pathname === '/search' });
+    }
+  }, [debouncedSearch, location.pathname, navigate, setSearchText]);
+
+  const updateText = event => {
+    pendingSearch.current = event.target.value;
+    setInputValue(event.target.value);
   };
 
  const toggleNav = () => {
@@ -84,8 +85,11 @@ function Navbar({searchText, setSearchText}){
  
  const handleSearchSubmit = (e) => {
    e.preventDefault();
-   if (inputValue.trim()) {
-     navigate('/search');
+   const query = inputValue.trim();
+   pendingSearch.current = null;
+   if (query) {
+     setSearchText(query);
+     navigate('/search?q=' + encodeURIComponent(query));
    }
  }
  
@@ -115,9 +119,9 @@ function Navbar({searchText, setSearchText}){
     </button>
     <div className={`collapse navbar-collapse ${isNavOpen ? 'show' : ''}`} id="navbarSupportedContent">
       {!isPhone && navigationLinks}
-      <form className="d-flex" role="search" onSubmit={handleSearchSubmit}>
+      <form className="d-flex navbar-search" role="search" onSubmit={handleSearchSubmit}>
         <input 
-          className="form-control me-2" 
+          className="form-control"
           type="search" 
           placeholder="Search movies, TV shows, people..." 
           aria-label="Search"

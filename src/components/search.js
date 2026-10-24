@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Hero from './Hero';
 import './Search.css';
 import useAutoScroll from '../hooks/useAutoScroll';
@@ -40,7 +40,9 @@ import { searchMulti } from '../utils/tmdbSearchService';
  * @param {string} props.keyword - Search keyword from URL params
  * @returns {JSX.Element} Search results component with grouped sections
  */
-const Search = ({ keyword }) => {
+const Search = ({ keyword: fallbackKeyword }) => {
+  const [params] = useSearchParams();
+  const keyword = params.get('q') ?? fallbackKeyword ?? '';
   const [results, setResults] = useState({ movies: [], tvShows: [], people: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -66,6 +68,8 @@ const Search = ({ keyword }) => {
       // Requirement #9: Ignore empty input
       if (!keyword || keyword.trim() === '') {
         setResults({ movies: [], tvShows: [], people: [] });
+        setLoading(false);
+        setError(null);
         return;
       }
 

@@ -1,41 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MovieCard from './Moviecard';
+import useGenreCatalog from '../hooks/useGenreCatalog';
 
 const TVShows = () => {
   const { genreId } = useParams();
-  const [tvShows, setTVShows] = useState([]);
-  const [genreName, setGenreName] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { items: tvShows, genreName, loading, error, hasMore, loadMore, sentinelRef } = useGenreCatalog('tv', genreId);
 
-  useEffect(() => {
-    if (genreId) {
-      fetch(`https://api.themoviedb.org/3/discover/tv?api_key=8f666adc99ee1f6168974514ff6d951a&with_genres=${genreId}&language=en-US&sort_by=popularity.desc`)
-        .then(res => res.json())
-        .then(data => {
-          setTVShows(data.results || []);
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error('Error:', err);
-          setError('Failed to load TV shows');
-          setLoading(false);
-        });
-
-      fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=8f666adc99ee1f6168974514ff6d951a&language=en`)
-        .then(res => res.json())
-        .then(data => {
-          const genre = data.genres.find(g => g.id.toString() === genreId.toString());
-          setGenreName(genre ? genre.name : 'TV Genre');
-        })
-        .catch(err => {
-          console.error('Error fetching TV genre:', err);
-        });
-    }
-  }, [genreId]);
-
-  if (loading) {
+  if (loading && !tvShows.length) {
     return (
       <div className="container catalog-page py-5">
         <div className="row">
@@ -52,14 +24,15 @@ const TVShows = () => {
     );
   }
 
-  if (error) {
+  if (error && !tvShows.length) {
     return (
       <div className="container catalog-page py-5">
         <div className="row">
           <div className="col-12">
             <div className="section-header text-center">
               <h2 className="section-title">Error</h2>
-              <p className="text-danger">{error}</p>
+              <p className="text-danger" role="alert">{error}</p>
+              <button type="button" className="btn btn-outline-light" onClick={loadMore}>Try again</button>
               <Link to="/" className="btn btn-primary mt-3">Go Back Home</Link>
             </div>
           </div>
@@ -98,6 +71,13 @@ const TVShows = () => {
               </Link>
             </div>
           )}
+          <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />
+          {loading && <p className="text-secondary text-center py-3" role="status">Loading more titles...</p>}
+          {error && <div className="text-center py-3" role="alert">
+            <p className="text-danger">{error}</p>
+            <button type="button" className="btn btn-outline-light" onClick={loadMore}>Try again</button>
+          </div>}
+          {!hasMore && tvShows.length > 0 && <p className="text-secondary text-center py-3">All available titles loaded.</p>}
         </div>
       </div>
     </div>

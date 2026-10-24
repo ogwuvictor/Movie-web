@@ -1,0 +1,29 @@
+/* One search field with its existing submit action inside the same outline. */
+.navbar form.navbar-search {
+  position: relative;
+  gap: 0;
+}
+.navbar form.navbar-search .form-control {
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+  padding-right: 52px;
+}
+.navbar form.navbar-search .btn {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 48px;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  box-shadow: none;
+}
+.navbar form.navbar-search .btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -4px;
+}
