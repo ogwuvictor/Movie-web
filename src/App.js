@@ -20,9 +20,11 @@ import MovieDetails from './components/Moviedetails';
 import MovieTrailers from './components/Trailers';
 import ProviderRedirect from './components/ProviderRedirect';
 import './Mobile.css';
+import useRouteScrollRestoration from './hooks/useRouteScrollRestoration';
 
 
 function App() {
+  useRouteScrollRestoration();
   const location = useLocation();
   const recordedNavigation = useRef(null);
   useEffect(() => {

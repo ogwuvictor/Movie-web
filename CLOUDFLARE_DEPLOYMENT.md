@@ -1,4 +1,4 @@
-# Cloudflare deployment — prepared, not yet deployed
+# Cloudflare deployment — account setup and verification
 
 The public React design is preserved. The new Cloudflare path uses a Worker, static build assets and D1. The old PHP/MySQL backend remains available for local recovery; **do not upload the PHP source or repository root as static assets**. A Pages-only upload will not provide the admin backend.
 
@@ -72,6 +72,6 @@ Cloudflare's published free allowances currently include 100,000 Worker/Function
 
 The current package still has the development-tool advisories documented in `SECURITY.md`. Existing TMDB metadata keys remain public in frontend code/history; rotate/proxy them if you need private-key handling. The four external streaming providers are not certified for playback, movie identity or licensing. Some reject the sandbox. No licensed movie/TV catalog was supplied, so this deployment preparation cannot certify a dependable public movie-streaming service. The open-license test clip is not a movie catalog.
 
-No real Cloudflare account resources, production D1 imports, Access policy or live deployment have been created by the local tests. **The code package can be prepared/tested locally; the site is not cleared for public launch until account configuration and the live acceptance checks above pass.**
+The `cinehub` D1 binding now uses the supplied real database ID. Its initially empty remote database was initialized successfully with all 50 schema statements. Existing MySQL data has not been imported. Cloudflare Access configuration, live deployment and the deployed sign-in/API acceptance checks remain unverified. **The site is not cleared for public launch until account configuration and the live acceptance checks above pass.**
 
 Official references: [Workers static-asset routing](https://developers.cloudflare.com/workers/static-assets/routing/worker-script/), [Access JWT validation](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/), [Workers/Functions free limits](https://developers.cloudflare.com/pages/functions/pricing/), [D1 pricing and limits](https://developers.cloudflare.com/d1/platform/pricing/).

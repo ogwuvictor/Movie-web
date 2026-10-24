@@ -6,6 +6,8 @@ import App from './App';
 test('existing About and Home navigation works with the patched router', async () => {
   const previousFetch = global.fetch;
   const previousMatchMedia = window.matchMedia;
+  const previousScrollTo = window.scrollTo;
+  window.scrollTo = jest.fn();
   window.matchMedia = jest.fn(() => ({ matches: false, addEventListener: jest.fn(), removeEventListener: jest.fn() }));
   global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [], genres: [] }) });
   try {
@@ -20,5 +22,6 @@ test('existing About and Home navigation works with the patched router', async (
   } finally {
     global.fetch = previousFetch;
     window.matchMedia = previousMatchMedia;
+    window.scrollTo = previousScrollTo;
   }
 });
