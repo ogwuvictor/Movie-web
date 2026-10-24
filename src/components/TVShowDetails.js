@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { trackProviderClick } from '../utils/analyticsService';
 import { useParams, Link } from 'react-router-dom';
 import { processProviders, generateRedirectUrl } from '../utils/providerLinkService';
@@ -12,15 +12,17 @@ const TVShowDetails = () => {
   const [posterPath, setPosterPath] = useState('');
   const [backDrop, setBackDrop] = useState('');
   const [loading, setLoading] = useState(true);
-  const [watchProviders, setWatchProviders] = useState(null);
+  const [, setWatchProviders] = useState(null);
   const [processedProviders, setProcessedProviders] = useState([]);
   const [showProvidersModal, setShowProvidersModal] = useState(false);
   const [showStreamingModal, setShowStreamingModal] = useState(false);
-  const [similarTVShows, setSimilarTVShows] = useState([]);
+  const [, setSimilarTVShows] = useState([]);
   const [recommendedTVShows, setRecommendedTVShows] = useState([]);
   const [seasons, setSeasons] = useState([]);
   const [expandedSeason, setExpandedSeason] = useState(null);
   const [episodes, setEpisodes] = useState({});
+  const episodesRef = useRef(episodes);
+  episodesRef.current = episodes;
   const [selectedEpisode, setSelectedEpisode] = useState(null);
   const playbackEpisode = selectedEpisode || episodes[expandedSeason]?.[0];
   const openEpisode = (seasonNumber, episode) => {
@@ -31,8 +33,8 @@ const TVShowDetails = () => {
   };
 
   // Fetch episodes for a specific season
-  const fetchSeasonEpisodes = async (seasonNumber, force = false) => {
-    if (!force && episodes[seasonNumber]) {
+  const fetchSeasonEpisodes = useCallback(async (seasonNumber, force = false) => {
+    if (!force && episodesRef.current[seasonNumber]) {
       // Already fetched, just expand
       setExpandedSeason(seasonNumber);
       return;
@@ -54,7 +56,7 @@ const TVShowDetails = () => {
     } catch (error) {
       console.error('Error fetching season episodes:', error);
     }
-  };
+  }, [id]);
 
   // Toggle season expansion
   const toggleSeason = (seasonNumber) => {
@@ -140,7 +142,7 @@ const TVShowDetails = () => {
     if (id) {
       fetchTVDetails();
     }
-  }, [id]);
+  }, [id, fetchSeasonEpisodes]);
 
   if (loading) {
     return (

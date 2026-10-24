@@ -17,11 +17,11 @@ const MovieDetails = () => {
   const [loading, setLoading] = useState(true);
   const [loadedFor, setLoadedFor] = useState(null);
   const [error, setError] = useState(null);
-  const [watchProviders, setWatchProviders] = useState(null);
+  const [, setWatchProviders] = useState(null);
   const [processedProviders, setProcessedProviders] = useState([]);
   const [showProvidersModal, setShowProvidersModal] = useState(false);
   const [showStreamingModal, setShowStreamingModal] = useState(false);
-  const [similarMovies, setSimilarMovies] = useState([]);
+  const [, setSimilarMovies] = useState([]);
   const [recommendedMovies, setRecommendedMovies] = useState([]);
   const [publicDomainData, setPublicDomainData] = useState(null);
 

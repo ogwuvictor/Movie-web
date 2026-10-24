@@ -62,7 +62,7 @@ const useAutoScroll = ({
         clearTimeout(userScrollTimeoutRef.current);
       }
     };
-  }, [scrollInterval, scrollAmount, enabled]);
+  }, [scrollInterval, scrollAmount, enabled, isPaused]);
 
   // Handle user manual scroll
   const handleUserScroll = () => {

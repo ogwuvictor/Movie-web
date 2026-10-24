@@ -64,16 +64,17 @@ const TVGenreDropdown = () => {
   return (
     <>
       <li className="nav-item tv-genre-dropdown" style={{ position: 'relative' }}>
-        <a 
-          className="nav-link" 
-          href="#" 
+        <button
+          type="button"
+          className="nav-link"
+          aria-expanded={isOpen}
           onClick={(e) => { e.preventDefault(); toggleDropdown(e); }}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', background: 'none', border: 0, font: 'inherit', textAlign: 'inherit' }}
         >
           <i className="fas fa-tv me-2"></i>
           TV Shows
           <i className="fas fa-chevron-down ms-2"></i>
-        </a>
+        </button>
       </li>
       
       {isOpen && buttonRect && (

@@ -266,7 +266,7 @@ export const trackApiPerformance = async (data) => {
   }
 };
 
-export default {
+const analyticsService = {
   trackPageView,
   trackProviderClick,
   trackSearch,
@@ -275,3 +275,5 @@ export default {
   trackApiPerformance,
   sessionId
 };
+
+export default analyticsService;

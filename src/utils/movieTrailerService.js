@@ -60,7 +60,7 @@ const fetchWithTimeout = async (url, options = {}, timeout = TMDB_CONFIG.TIMEOUT
 export const fetchMovieTrailer = async (movieId) => {
   try {
     // Validate input - check for null, undefined, empty string, or invalid types
-    if (!movieId || movieId === 'undefined' || movieId === '' || typeof movieId !== 'string' && typeof movieId !== 'number') {
+    if (!movieId || movieId === 'undefined' || movieId === '' || (typeof movieId !== 'string' && typeof movieId !== 'number')) {
       console.error('❌ Invalid Movie ID:', movieId, 'Type:', typeof(movieId));
       return null;
     }
@@ -256,7 +256,7 @@ export const debugTrailerAvailability = async (movieId) => {
   console.log(`\n🔍 DEBUGGING TRAILER AVAILABILITY`);
   console.log(`Movie ID: ${movieId}`);
   console.log(`API URL: ${TMDB_CONFIG.BASE_URL}/movie/${movieId}/videos`);
-  console.log('=' .repeat(60));
+  console.log('='.repeat(60));
   
   try {
     // Test with Bearer token

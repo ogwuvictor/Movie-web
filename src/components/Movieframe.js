@@ -11,11 +11,6 @@ import React from 'react';
  * @returns {JSX.Element} YouTube iframe component
  */
 const MovieFrame = ({ videoId }) => {
-  // Note: iframeWidth and iframeHeight are no longer needed
-  // as we use Bootstrap's responsive ratio classes
-  const iframeWidth ="100%"
-  const iframeHeight = 515;
-
   // Render responsive YouTube iframe with proper attributes
   return (
     <div className="ratio ratio-16x9">

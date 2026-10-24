@@ -14,7 +14,6 @@ import {
   useLocation,
   Routes,
   Route,
-  Link,
 } from 'react-router-dom'
 import Search from './components/search';
 import MovieDetails from './components/Moviedetails';
@@ -36,7 +35,6 @@ function App() {
     if (page_type) trackPageView({ page_type, content_id: detail ? Number(detail[2]) : null, content_type: detail ? detail[1].startsWith('tv') ? 'tv' : 'movie' : null });
   }, [location.key, location.pathname]);
   const [searchText, setSearchText] = useState('')
-  const [searchResult, setSearchResult] = useState ([])
 
   return (
    <div>

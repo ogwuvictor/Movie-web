@@ -250,7 +250,7 @@ export const generateRedirectUrl = (providerKey, title, tmdbId, mediaType = 'mov
   return `/out/${providerKey}?title=${encodedTitle}&id=${tmdbId}${mediaType === 'tv' ? '&type=tv' : ''}`;
 };
 
-export default {
+const providerLinkService = {
   normalizeProviderName,
   isProviderSupported,
   buildProviderUrl,
@@ -261,3 +261,5 @@ export default {
   SUPPORTED_PROVIDERS,
   PROVIDER_CONFIG,
 };
+
+export default providerLinkService;
