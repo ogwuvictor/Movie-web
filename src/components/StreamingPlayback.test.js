@@ -27,7 +27,7 @@ test('provider mode opens VidLink, keeps iframe playback unverified and never su
   const { container } = render(<StreamingPlayback selection={{ tmdbId: 550, mediaType: 'movie' }} title="Fixture film" />);
   const frame = screen.getByTitle('Fixture film');
   expect(frame).toHaveAttribute('src', 'https://vidlink.pro/movie/550');
-  expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
+  expect(frame).not.toHaveAttribute('sandbox');
   expect(screen.getByRole('combobox', { name: 'Streaming server' })).toHaveValue('vidlink');
   fireEvent.load(frame);
   expect(screen.getByRole('status')).toHaveTextContent('playback not verified');
