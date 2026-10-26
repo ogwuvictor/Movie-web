@@ -41,7 +41,7 @@ test('Where to Watch restores provider links; Watch Now alone opens the streamin
   const player = screen.getByRole('dialog', { name: 'Watch now: Fixture film' });
   expect(within(player).queryByRole('link', { name: 'Find on Netflix' })).toBeNull();
   expect(screen.getByTitle('Fixture film')).toHaveAttribute('src', 'https://vidlink.pro/movie/550');
-  fireEvent.change(screen.getByRole('combobox', { name: 'Streaming server' }), { target: { value: 'videasy' } });
+  fireEvent.click(screen.getByRole('radio', { name: 'Videasy' }));
   expect(screen.getByTitle('Fixture film')).toHaveAttribute('src', 'https://player.videasy.net/movie/550');
 });
 

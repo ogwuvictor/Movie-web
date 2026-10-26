@@ -1,0 +1,21 @@
+.streaming-modal .modal-content { background: #171717 !important; border: 1px solid #383838; border-radius: 14px; overflow: hidden; }
+.streaming-modal .modal-header { border-bottom-color: #333 !important; }
+.streaming-modal .streaming-runtime { margin-bottom: 16px; font-size: .875rem; }
+.streaming-server-control { border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
+.streaming-server-control legend { float: none; width: auto; font-size: .875rem; font-weight: 600; margin-bottom: 10px; }
+.streaming-server-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.streaming-server-option { position: relative; min-width: 0; cursor: pointer; }
+.streaming-server-option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.streaming-server-option span { display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 44px; padding: 10px 8px; background: #242424; color: #ccc; border: 1px solid #414141; border-radius: 8px; font-size: .875rem; }
+.streaming-server-option input:checked + span { background: #fff; color: #111; border-color: #fff; font-weight: 600; }
+.streaming-server-option input:focus-visible + span { outline: 2px solid #fff; outline-offset: 3px; }
+.streaming-server-option:hover span { border-color: #aaa; }
+.streaming-modal .streaming-viewport { background: #000; border-radius: 8px; overflow: hidden; }
+.streaming-modal .streaming-viewport iframe { border: 0; }
+.streaming-modal .modal-body > .text-secondary { font-size: .875rem; line-height: 1.5; }
+.streaming-help { border-top: 1px solid #333; padding-top: 12px; margin-bottom: 12px; font-size: .875rem; }
+.streaming-help summary { cursor: pointer; color: #ccc; min-height: 32px; }
+.streaming-help p { line-height: 1.5; margin: 8px 0; }
+@media (max-width: 575.98px) {
+  .streaming-server-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

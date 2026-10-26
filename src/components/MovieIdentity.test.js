@@ -37,7 +37,7 @@ test('late metadata for a previous movie cannot replace the new title or its str
   expect(screen.queryByRole('heading', { name: 'Movie 550', exact: true })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: /Watch Now/ }));
   expect(screen.getByTitle('Movie 551')).toHaveAttribute('src', 'https://vidlink.pro/movie/551');
-  fireEvent.change(screen.getByRole('combobox', { name: 'Streaming server' }), { target: { value: 'videasy' } });
+  fireEvent.click(screen.getByRole('radio', { name: 'Videasy' }));
   expect(screen.getByTitle('Movie 551')).toHaveAttribute('src', 'https://player.videasy.net/movie/551');
 });
 

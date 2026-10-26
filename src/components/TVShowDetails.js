@@ -3,6 +3,7 @@ import { trackProviderClick } from '../utils/analyticsService';
 import { useParams, Link } from 'react-router-dom';
 import { processProviders, generateRedirectUrl } from '../utils/providerLinkService';
 import StreamingModal from './StreamingModal';
+import './SeriesBrowser.css';
 
 const TVShowDetails = () => {
   const { id } = useParams();
@@ -20,6 +21,10 @@ const TVShowDetails = () => {
   const [recommendedTVShows, setRecommendedTVShows] = useState([]);
   const [seasons, setSeasons] = useState([]);
   const [expandedSeason, setExpandedSeason] = useState(null);
+  const [episodePage, setEpisodePage] = useState(0);
+  const [loadingSeason, setLoadingSeason] = useState(false);
+  const [seasonError, setSeasonError] = useState('');
+  const seasonRequest = useRef(0);
   const [episodes, setEpisodes] = useState({});
   const episodesRef = useRef(episodes);
   episodesRef.current = episodes;
@@ -34,45 +39,42 @@ const TVShowDetails = () => {
 
   // Fetch episodes for a specific season
   const fetchSeasonEpisodes = useCallback(async (seasonNumber, force = false) => {
+    const sequence = ++seasonRequest.current;
+    setExpandedSeason(seasonNumber);
+    setEpisodePage(0);
+    setSeasonError('');
     if (!force && episodesRef.current[seasonNumber]) {
-      // Already fetched, just expand
-      setExpandedSeason(seasonNumber);
+      setLoadingSeason(false);
       return;
     }
-
+    setLoadingSeason(true);
     try {
       const seasonUrl = `https://api.themoviedb.org/3/tv/${id}/season/${seasonNumber}?api_key=8f666adc99ee1f6168974514ff6d951a`;
       const response = await fetch(seasonUrl);
       
-      if (response.ok) {
-        const seasonData = await response.json();
-        if (seriesIdRef.current !== id) return;
-        setEpisodes(prev => ({
-          ...prev,
-          [seasonNumber]: seasonData.episodes || []
-        }));
-        setExpandedSeason(seasonNumber);
-      }
+      if (!response.ok) throw new Error('Episodes unavailable');
+      const seasonData = await response.json();
+      if (seriesIdRef.current !== id || sequence !== seasonRequest.current) return;
+      setEpisodes(prev => ({
+        ...prev,
+        [seasonNumber]: seasonData.episodes || []
+      }));
     } catch (error) {
-      console.error('Error fetching season episodes:', error);
+      if (seriesIdRef.current === id && sequence === seasonRequest.current) setSeasonError('Unable to load episodes. Please try again.');
+    } finally {
+      if (seriesIdRef.current === id && sequence === seasonRequest.current) setLoadingSeason(false);
     }
   }, [id]);
-
-  // Toggle season expansion
-  const toggleSeason = (seasonNumber) => {
-    if (expandedSeason === seasonNumber) {
-      setExpandedSeason(null);
-    } else {
-      setSelectedEpisode(null);
-      fetchSeasonEpisodes(seasonNumber);
-    }
-  };
 
   useEffect(() => {
     setShowProvidersModal(false);
     setShowStreamingModal(false);
     setSelectedEpisode(null);
     setEpisodes({});
+    episodesRef.current = {};
+    ++seasonRequest.current;
+    setEpisodePage(0);
+    setSeasonError('');
     setExpandedSeason(null);
     setProcessedProviders([]);
     const fetchTVDetails = async () => {
@@ -179,7 +181,7 @@ const TVShowDetails = () => {
                   </span>
                 </div>
                 
-                <div className="netflix-actions mb-4">
+                <div className="netflix-actions movie-actions mb-4">
                   <Link to={`/tvtrailers/${id}`} className="netflix-play-btn">
                     <i className="fas fa-play"></i> Play Trailer
                   </Link>
@@ -233,55 +235,36 @@ const TVShowDetails = () => {
         <div className="netflix-seasons-section">
           <div className="container py-5">
             <h3 className="netflix-section-title mb-4">Seasons & Episodes</h3>
-            <div className="netflix-seasons-list">
-              {seasons.map((season) => (
-                  <div key={season.id} className="netflix-season-item">
-                    <button 
-                      className="netflix-season-header"
-                      onClick={() => toggleSeason(season.season_number)}
-                    >
-                      <div className="netflix-season-info">
-                        <span className="netflix-season-number">
-                          {season.name}
-                        </span>
-                        <span className="netflix-episode-count">
-                          {season.episode_count} Episode{season.episode_count !== 1 ? 's' : ''}
-                        </span>
-                        <span className="netflix-season-date">
-                          {season.air_date ? new Date(season.air_date).getFullYear() : 'N/A'}
-                        </span>
-                      </div>
+            <div className="series-browser">
+              <label className="series-season-picker">Season
+                <select className="form-select bg-dark text-white border-secondary" aria-label="Season" value={expandedSeason ?? ''}
+                  onChange={event => { setSelectedEpisode(null); fetchSeasonEpisodes(Number(event.target.value)); }}>
+                  <option value="" disabled>Select a season</option>
+                  {seasons.map(season => <option key={season.id} value={season.season_number}>{season.name} &middot; {season.episode_count} episodes</option>)}
+                </select>
+              </label>
+              {loadingSeason && <p role="status" className="text-secondary">Loading episodes...</p>}
+              {seasonError && <div role="alert"><p>{seasonError}</p><button className="btn btn-outline-light" onClick={() => fetchSeasonEpisodes(expandedSeason, true)}>Try again</button></div>}
+              {!loadingSeason && !seasonError && <>
+                <div className="netflix-episodes-list series-episode-page" id="series-episode-page">
+                  {(episodes[expandedSeason] || []).slice(episodePage * 6, episodePage * 6 + 6).map(episode => (
+                    <button key={episode.id} type="button" className="netflix-episode-item series-episode-button" onClick={() => openEpisode(expandedSeason, episode)}>
+                      <span className="netflix-episode-number">{episode.episode_number}</span>
+                      <span className="netflix-episode-info">
+                        <span className="netflix-episode-title">{episode.name}</span>
+                        <span className="netflix-episode-overview">{episode.overview || 'No overview available.'}</span>
+                      </span>
+                      <i className="fas fa-play" aria-hidden="true"></i>
                     </button>
-                    
-                    {expandedSeason === season.season_number && episodes[season.season_number] && (
-                      <div className="netflix-episodes-list">
-                        {episodes[season.season_number].map((episode) => (
-                          <div key={episode.id} className="netflix-episode-item"
-                            role="button" tabIndex={0}
-                            onClick={() => openEpisode(season.season_number, episode)}
-                            onKeyDown={event => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault();
-                                openEpisode(season.season_number, episode);
-                              }
-                            }}>
-                            <div className="netflix-episode-number">
-                              {episode.episode_number}
-                            </div>
-                            <div className="netflix-episode-info">
-                              <h6 className="netflix-episode-title">
-                                {episode.name}
-                              </h6>
-                              <p className="netflix-episode-overview">
-                                {episode.overview || 'No overview available.'}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
+                {(episodes[expandedSeason]?.length || 0) === 0 && <p className="text-secondary">No episodes available for this season.</p>}
+                {(episodes[expandedSeason]?.length || 0) > 6 && <nav className="series-pagination" aria-label="Episode pages">
+                  <button type="button" className="btn btn-outline-light" disabled={episodePage === 0} onClick={() => setEpisodePage(page => page - 1)}>Previous</button>
+                  <span aria-live="polite">Episodes {episodePage * 6 + 1}&ndash;{Math.min((episodePage + 1) * 6, episodes[expandedSeason].length)} of {episodes[expandedSeason].length}</span>
+                  <button type="button" className="btn btn-outline-light" disabled={(episodePage + 1) * 6 >= episodes[expandedSeason].length} onClick={() => setEpisodePage(page => page + 1)}>Next</button>
+                </nav>}
+              </>}
             </div>
           </div>
         </div>

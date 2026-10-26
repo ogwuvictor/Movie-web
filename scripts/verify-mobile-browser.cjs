@@ -66,7 +66,7 @@ const genres = Array.from({ length: 19 }, (_, i) => ({ id: i === 0 ? 28 : 100 + 
             assert(Math.abs(poster.x + poster.width / 2 - width / 2) < 2, JSON.stringify({ width, poster, metrics }));
             await page.getByRole('button', { name: /Watch Now/ }).click();
             const modal = page.getByRole('dialog');
-            await modal.getByRole('combobox', { name: 'Streaming server' }).waitFor();
+            await modal.getByRole('group', { name: 'Streaming server' }).waitFor();
             const box = await modal.locator('.modal-content').boundingBox();
             assert(box.width <= width - 12 && box.height <= 844 - 12);
             assert.equal(await page.evaluate(() => document.body.style.overflow), 'hidden');

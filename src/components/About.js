@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Hero from './Hero';
 import { Link } from 'react-router-dom';
 import './About.css';
@@ -14,6 +14,13 @@ import './About.css';
  * @returns {JSX.Element} About page component
  */
 const About = ({title}) => {
+    const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 575.98px)').matches);
+    useEffect(() => {
+        const media = window.matchMedia('(max-width: 575.98px)');
+        const update = event => setCompact(event.matches);
+        media.addEventListener('change', update);
+        return () => media.removeEventListener('change', update);
+    }, []);
     return ( 
         <div className="about-page">
             {/* Hero section with custom title */}
@@ -52,8 +59,7 @@ const About = ({title}) => {
                             </div>
                             <h4 className="feature-title text-white mb-3">Movies &amp; TV Series</h4>
                             <p className="text-secondary">
-                                Browse trending releases, popular titles, anime, and regional collections.
-                                Explore TV seasons and episodes alongside your favorite films.
+                                Find films, anime and TV series. Browse seasons and episodes in one place.
                             </p>
                         </div>
                     </div>
@@ -66,8 +72,7 @@ const About = ({title}) => {
                             </div>
                             <h4 className="feature-title text-white mb-3">Discover Your Way</h4>
                             <p className="text-secondary">
-                                Search for a title or swipe through genre buttons to match your mood.
-                                Read overviews, check ratings, and explore related recommendations.
+                                Search titles, explore genres, and read ratings and overviews.
                             </p>
                         </div>
                     </div>
@@ -80,31 +85,23 @@ const About = ({title}) => {
                             </div>
                             <h4 className="feature-title text-white mb-3">Preview &amp; Watch</h4>
                             <p className="text-secondary">
-                                Preview official trailers when available. Use Where to Watch to find platforms,
-                                or Watch Now to open the streaming player and choose a source.
+                                Preview official trailers, find viewing platforms, or choose a streaming source.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <section className="stats-section text-center mb-5 about-demo-stats" aria-labelledby="demo-stats-title">
-                    <h3 id="demo-stats-title" className="text-white mb-3">Demo Statistics</h3>
-                    <p className="text-secondary mb-4">
-                        Illustrative sample figures only. CineHub has no users yet; these are not actual user or catalog counts.
-                    </p>
+                <section className="stats-section text-center mb-5 about-at-a-glance" aria-labelledby="about-glance-title">
+                    <h3 id="about-glance-title" className="text-white mb-3">CineHub at a Glance</h3>
                     <div className="row">
-                        <div className="col-6 col-md-6">
-                            <div className="stat-item">
-                                <h3 className="stat-number text-danger">1M+</h3>
-                                <p className="stat-label text-white">Users (sample)</p>
-                            </div>
-                        </div>
-                        <div className="col-6 col-md-6">
-                            <div className="stat-item">
-                                <h3 className="stat-number text-warning">500+</h3>
-                                <p className="stat-label text-white">Genres (sample)</p>
-                            </div>
-                        </div>
+                        <div className="col-6"><div className="stat-item">
+                            <h3 className="stat-number text-white">Movies</h3>
+                            <p className="stat-label text-white">Trailers, genres &amp; viewing options</p>
+                        </div></div>
+                        <div className="col-6"><div className="stat-item">
+                            <h3 className="stat-number text-white">TV Series</h3>
+                            <p className="stat-label text-white">Seasons, episodes &amp; recommendations</p>
+                        </div></div>
                     </div>
                 </section>
 
@@ -146,8 +143,8 @@ const About = ({title}) => {
                 {/* About Content */}
                 <div className="row mb-5 about-information">
                     <div className="col-12 col-lg-6 mb-4 mb-lg-0">
-                        <div className="about-content">
-                            <h3 className="text-white mb-3">Our Mission</h3>
+                        <details className="about-content" open={!compact}>
+                            <summary className="text-white">Our Mission</summary>
                             <p className="text-secondary mb-3">
                                 Finding something to watch should feel enjoyable, not overwhelming.
                                 Our goal is to help you move from an idea, a genre, or a familiar title
@@ -158,11 +155,11 @@ const About = ({title}) => {
                                 and viewing options. Movie and TV information comes from TMDB,
                                 with related titles to help you keep exploring.
                             </p>
-                        </div>
+                        </details>
                     </div>
                     <div className="col-12 col-lg-6">
-                        <div className="about-content">
-                            <h3 className="text-white mb-3">Know Your Viewing Options</h3>
+                        <details className="about-content" open={!compact}>
+                            <summary className="text-white">Know Your Viewing Options</summary>
                             <ul className="text-secondary">
                                 <li className="mb-2"><i className="fas fa-check text-success me-2"></i>Play Trailer previews an official video when one is available.</li>
                                 <li className="mb-2"><i className="fas fa-check text-success me-2"></i>Where to Watch lists supported platforms and opens their links.</li>
@@ -171,7 +168,7 @@ const About = ({title}) => {
                                 <li className="mb-2"><i className="fas fa-check text-success me-2"></i>Availability, playback quality, and subtitles depend on the source and your region.</li>
                                 <li className="mb-2"><i className="fas fa-check text-success me-2"></i>Some titles also include a Download link.</li>
                             </ul>
-                        </div>
+                        </details>
                     </div>
                 </div>
 

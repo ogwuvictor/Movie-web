@@ -26,7 +26,7 @@ const clip = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flow
     await page.getByRole('button', { name: /Watch Now/ }).click();
     for (const provider of ['vidlink', 'videasy', 'vidfast', 'movies111']) {
       await page.setViewportSize({ width: 390, height: 844 });
-      await page.getByRole('combobox', { name: 'Streaming server' }).selectOption(provider);
+      await page.locator(`.streaming-server-option input[value="${provider}"]`).locator("..").click();
       const iframe = page.locator('.streaming-viewport iframe');
       const frame = page.frameLocator('.streaming-viewport iframe');
       await frame.locator('video').waitFor();

@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useId, useMemo } from 'react';
+import './StreamingPlayback.css';
 import useStreaming from '../hooks/useStreaming';
 import { TEST_VIDEO_SOURCES } from '../streaming/testVideoSource';
 import { PLAYBACK_SERVERS } from '../streaming/streamingServers';
@@ -9,6 +10,7 @@ export default function StreamingPlayback({ selection, title, sampleOnly = false
     availableServerIds ? PLAYBACK_SERVERS.filter(server => availableServerIds.includes(server.id)) : PLAYBACK_SERVERS,
   [sampleOnly, availableServerIds]);
   const stream = useStreaming(selection, sources);
+  const serverGroup = useId();
   const { start } = stream;
   useEffect(() => { start(); }, [start]);
   const visible = stream.url && !['idle', 'error'].includes(stream.status);
@@ -29,15 +31,16 @@ export default function StreamingPlayback({ selection, title, sampleOnly = false
       {selection.mediaType === 'tv' ? `, season ${selection.season}, episode ${selection.episode}` : ''}.
       {' '}Full movie and TV playback requires an authorized source.
     </p>}
-    {!sampleOnly && stream.sources.length > 1 && <label className="form-label d-block streaming-server-control">
-      Streaming server
-      <select className="form-select bg-dark text-white border-secondary"
-        aria-label="Streaming server" value={stream.source?.id || ''}
-        onChange={event => stream.switchServer(event.target.value)}>
-        {!stream.source && <option value="" disabled>Select a server</option>}
-        {stream.sources.map(server => <option key={server.id} value={server.id}>{server.name}</option>)}
-      </select>
-    </label>}
+    {!sampleOnly && stream.sources.length > 1 && <fieldset className="streaming-server-control">
+      <legend>Streaming server</legend>
+      <div className="streaming-server-options">
+        {stream.sources.map(server => <label key={server.id} className="streaming-server-option">
+          <input type="radio" name={serverGroup} value={server.id} checked={stream.source?.id === server.id}
+            onChange={() => stream.switchServer(server.id)} />
+          <span><i className="fas fa-play-circle" aria-hidden="true"></i>{server.name}</span>
+        </label>)}
+      </div>
+    </fieldset>}
     {visible && <div className="ratio ratio-16x9 streaming-viewport">
       {stream.source.type === 'video'
         ? <video key={`${stream.source.id}:${stream.url}`} {...stream.videoProps} controls aria-label={sampleOnly ? 'Open-license test video' : title} />
@@ -49,8 +52,11 @@ export default function StreamingPlayback({ selection, title, sampleOnly = false
     {stream.providerProgress && <p className="text-secondary" aria-label="Playback time">
       {formatTime(stream.providerProgress.currentTime)} / {formatTime(stream.providerProgress.duration)}
     </p>}
-    {!sampleOnly && <p className="text-secondary">If the video does not play, choose another streaming server above. Availability depends on the provider.</p>}
-    {!sampleOnly && <p className="text-secondary">For subtitle language, use the CC or settings menu inside the video. Subtitles printed into the video cannot be switched off.</p>}
+    {!sampleOnly && <details className="streaming-help">
+      <summary>Playback &amp; subtitles</summary>
+      <p className="text-secondary">If the video does not play, choose another streaming server above. Availability depends on the provider.</p>
+      <p className="text-secondary">For subtitle language, use the CC or settings menu inside the video. Subtitles printed into the video cannot be switched off.</p>
+    </details>}
     <p className="text-secondary streaming-rotation-hint">For a larger picture on your phone, turn it sideways and use the video&apos;s fullscreen button.</p>
   </>;
 }

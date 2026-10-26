@@ -55,23 +55,23 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(os.tmpdi
         assert.equal(await now.getAttribute('class'), 'netflix-play-btn');
         await where.click();
         await page.locator('.modal-body a[href*="/out/netflix"]').waitFor();
-        assert.equal(await page.locator('iframe,video,select[aria-label="Streaming server"]').count(), 0);
+        assert.equal(await page.locator('iframe,video,.streaming-server-control').count(), 0);
         await page.locator('.modal-header .btn-close').click();
         await now.click();
         const title = route.startsWith('/tv/') ? 'Fixture series' : 'Fixture film';
         const frame = page.getByTitle(title, { exact: true });
         const suffix = route.startsWith('/tv/') ? 'tv/1399/2/3' : 'movie/550';
-        const selector = page.getByRole('combobox', { name: 'Streaming server' });
+        const selector = page.getByRole('group', { name: 'Streaming server' });
         await selector.waitFor();
         await page.getByLabel('Playback time').filter({ hasText: '1:00 / 2:00:00' }).waitFor();
         if (!route.startsWith('/tv/')) await page.getByText('Movie runtime (TMDB): 2h 0m').waitFor();
-        assert.equal(await selector.locator('option').count(), 4);
+        assert.equal(await selector.getByRole('radio').count(), 4);
         assert.equal(await page.locator('.modal-body a[href*="/out/netflix"]').count(), 0);
         for (const [id, url] of [
           ['vidlink', `https://vidlink.pro/${suffix}`], ['videasy', `https://player.videasy.net/${suffix}`],
           ['vidfast', `https://vidfast.pro/${suffix}?autoPlay=true&title=false&hideServer=true`], ['movies111', `https://111movies.net/${suffix}`],
         ]) {
-          await selector.selectOption(id);
+          await selector.locator(`input[value="${id}"]`).locator("..").click();
           await page.waitForFunction(expected => document.querySelector('iframe')?.src === expected, url);
           assert.equal(await frame.getAttribute('src'), url);
         }

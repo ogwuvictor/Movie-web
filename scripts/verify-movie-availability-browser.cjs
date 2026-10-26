@@ -50,7 +50,7 @@ const { chromium } = require(path.join(os.tmpdir(), 'moviesync-browser-tools/nod
         assert(await page.getByRole('link', { name: /Play Trailer/ }).isVisible());
         await page.getByRole('button', { name: /Watch Now/ }).click();
         assert.equal(await page.locator('iframe').getAttribute('src'), 'https://vidlink.pro/movie/550');
-        assert.equal(await page.getByRole('combobox', { name: 'Streaming server' }).locator('option').count(), 4);
+        assert.equal(await page.getByRole('group', { name: 'Streaming server' }).getByRole('radio').count(), 4);
         await page.getByRole('button', { name: 'Close player' }).click();
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth), false);
       }

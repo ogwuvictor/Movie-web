@@ -170,15 +170,15 @@
   .netflix-actions { gap: 10px; }
   .netflix-actions > a, .netflix-actions > button { min-height: 46px; padding: 12px 16px; }
   .movie-details-content .movie-actions {
-    flex-direction: row;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-    align-items: center;
+    align-items: stretch;
   }
   .movie-details-content .movie-actions > a,
   .movie-details-content .movie-actions > button {
     flex: 0 1 auto;
-    width: auto;
+    width: 100%;
     min-width: 0;
     min-height: 44px;
     padding: 8px 10px;
@@ -187,7 +187,13 @@
     gap: 6px;
     border: 1px solid transparent;
     border-radius: 6px;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
+  .movie-details-content .movie-actions > a i,
+  .movie-details-content .movie-actions > button i { display: none; }
   .movie-details-content .movie-actions > a:hover,
   .movie-details-content .movie-actions > button:hover { transform: none; }
   .movie-overview { text-align: left; line-height: 1.65; }

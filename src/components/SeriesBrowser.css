@@ -1,0 +1,12 @@
+.series-browser { max-width: 100%; }
+.series-season-picker { display: block; max-width: 380px; margin-bottom: 18px; color: #ccc; font-size: .875rem; }
+.series-season-picker select { margin-top: 8px; min-height: 44px; }
+.series-episode-page { padding: 0 !important; }
+.series-browser .series-episode-button { width: 100%; background: transparent; border: 0; border-bottom: 1px solid #333; color: #fff; text-align: left; display: flex; align-items: center; gap: 16px; padding: 14px 8px; cursor: pointer; }
+.series-episode-button:hover, .series-episode-button:focus-visible { background: #242424; }
+.series-episode-button .netflix-episode-info { flex: 1; min-width: 0; }
+.series-episode-button .netflix-episode-title { display: block; margin-bottom: 6px; }
+.series-episode-button .netflix-episode-overview { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: .875rem; margin: 0; }
+.series-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; }
+.series-pagination span { font-size: .8125rem; color: #bbb; text-align: center; }
+.series-pagination .btn { min-height: 44px; padding: 8px 12px; font-size: .8125rem; }

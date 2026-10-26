@@ -43,14 +43,14 @@ const { chromium } = require(path.join(os.tmpdir(), 'moviesync-browser-tools/nod
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       assert.equal(await page.getByRole('heading', { name: 'Movie 550', exact: true }).count(), 0);
       await page.getByRole('button', { name: /Watch Now/ }).click();
-      const selector = page.getByRole('combobox', { name: 'Streaming server' });
+      const selector = page.getByRole('group', { name: 'Streaming server' });
       for (const [server, expected] of [
         ['vidlink', 'https://vidlink.pro/movie/551'],
         ['videasy', 'https://player.videasy.net/movie/551'],
         ['vidfast', 'https://vidfast.pro/movie/551?autoPlay=true&title=false&hideServer=true'],
         ['movies111', 'https://111movies.net/movie/551'],
       ]) {
-        await selector.selectOption(server);
+        await selector.locator(`input[value="${server}"]`).locator("..").click();
         await page.waitForFunction(url => document.querySelector('iframe')?.src === url, expected);
         assert.equal(await page.getByTitle('Movie 551', { exact: true }).getAttribute('src'), expected);
       }

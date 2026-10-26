@@ -1,3 +1,6 @@
+.about-page .about-content summary { font-size: 1.4rem; font-weight: 600; cursor: pointer; }
+.about-page .about-content[open] summary { margin-bottom: 16px; }
+.about-page .about-at-a-glance .stat-number { font-size: 1.5rem; }
 /* Preserve the intended mobile grid despite legacy global column overrides. */
 @media (max-width: 767px) {
   .about-page .about-features > div {
@@ -9,4 +12,18 @@
     flex: 0 0 50%;
     max-width: 50%;
   }
+}
+
+@media (max-width: 575.98px) {
+  .about-page .row.about-features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .about-page .about-features > div { width: auto; min-width: 0; max-width: none; }
+  .about-page .about-features > div:last-child { grid-column: 1 / -1; }
+  .about-page .about-features .feature-card { display: block; height: 100%; padding: 14px; }
+  .about-page .about-features .feature-icon { margin-bottom: 10px !important; }
+  .about-page .about-features .feature-title { font-size: .9375rem; }
+  .about-page .about-features .feature-card p { font-size: .8125rem; line-height: 1.5; }
+  .about-page .about-information .about-content { padding: 16px; }
+  .about-page .about-content summary { font-size: 1rem; line-height: 1.5; }
+  .about-page .about-at-a-glance .stat-number { font-size: 1.2rem; }
+  .about-page .about-at-a-glance.mb-5 { margin-bottom: 24px !important; }
 }

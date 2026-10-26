@@ -28,7 +28,7 @@ test('provider mode opens VidLink, keeps iframe playback unverified and never su
   const frame = screen.getByTitle('Fixture film');
   expect(frame).toHaveAttribute('src', 'https://vidlink.pro/movie/550');
   expect(frame).not.toHaveAttribute('sandbox');
-  expect(screen.getByRole('combobox', { name: 'Streaming server' })).toHaveValue('vidlink');
+  expect(screen.getByRole('radio', { name: 'VidLink Pro' })).toBeChecked();
   fireEvent.load(frame);
   expect(screen.getByRole('status')).toHaveTextContent('playback not verified');
   expect(container.querySelector('video')).toBeNull();
