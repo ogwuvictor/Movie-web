@@ -201,3 +201,49 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
 );
 CREATE INDEX IF NOT EXISTS admin_sessions_expiry ON admin_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS admin_sessions_user ON admin_sessions(user_id);
+CREATE TABLE IF NOT EXISTS visitors (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+ email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+ password_hash TEXT NOT NULL,
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS visitor_sessions (
+ token_hash TEXT PRIMARY KEY,
+ user_id INTEGER NOT NULL REFERENCES visitors(id) ON DELETE CASCADE,
+ last_seen INTEGER NOT NULL,
+ expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS visitor_sessions_user ON visitor_sessions(user_id);
+CREATE TABLE IF NOT EXISTS visitor_library (
+ user_id INTEGER NOT NULL REFERENCES visitors(id) ON DELETE CASCADE,
+ media_type TEXT NOT NULL CHECK(media_type IN ('movie','tv')),
+ tmdb_id INTEGER NOT NULL CHECK(tmdb_id>0),
+ list TEXT NOT NULL CHECK(list IN ('favorite','watchlist')),
+ title TEXT NOT NULL,
+ poster_path TEXT,
+ created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY(user_id,media_type,tmdb_id,list)
+);
+CREATE TABLE IF NOT EXISTS visitor_reviews (
+ user_id INTEGER NOT NULL REFERENCES visitors(id) ON DELETE CASCADE,
+ media_type TEXT NOT NULL CHECK(media_type IN ('movie','tv')),
+ tmdb_id INTEGER NOT NULL CHECK(tmdb_id>0),
+ rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 10),
+ review TEXT NOT NULL DEFAULT '',
+ updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY(user_id,media_type,tmdb_id)
+);
+CREATE INDEX IF NOT EXISTS visitor_reviews_title ON visitor_reviews(media_type,tmdb_id,updated_at);
+CREATE TABLE IF NOT EXISTS visitor_daily_activity (
+ user_id INTEGER NOT NULL REFERENCES visitors(id) ON DELETE CASCADE,
+ activity_date TEXT NOT NULL,
+ last_seen INTEGER NOT NULL,
+ PRIMARY KEY(user_id,activity_date)
+);
+CREATE INDEX IF NOT EXISTS visitor_activity_date ON visitor_daily_activity(activity_date,user_id);
+CREATE TABLE IF NOT EXISTS visitor_activity_settings (
+ id INTEGER PRIMARY KEY CHECK(id=1),
+ started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+INSERT OR IGNORE INTO visitor_activity_settings(id) VALUES (1);

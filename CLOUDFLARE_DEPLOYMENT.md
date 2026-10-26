@@ -58,7 +58,49 @@ Cloudflare Access variables (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `ADMIN_EMAILS`)
 
 The only runtime secret required for built-in login is `ADMIN_SESSION_SECRET`. Keep it out of `REACT_APP_*` variables, public files and Git. Dashboard settings are under Workers & Pages > cinehub > Settings > Variables and Secrets, separate from Build variables.
 
-## Login and recovery behavior
+## Visitor accounts, favorites and watchlists
+
+Visitor accounts use `/account`, with separate database tables and a separate HttpOnly session cookie from admin login. Visitors cannot access admin APIs. The same private `ADMIN_SESSION_SECRET` signs domain-separated visitor tokens; rotating it revokes both kinds of sessions. Visitor signup/sign-in uses the same strong scrypt settings and has the same free-plan CPU limitation described above. This must be tested on the deployed plan before launch.
+
+Before deploying this version to an existing database, apply the additive visitor migration once (safe to repeat):
+
+```powershell
+npx wrangler@4.152.0 d1 execute cinehub --remote --file=cloudflare/migrations/20261026_visitors.sql
+```
+
+For local use, replace `--remote` with `--local`, build with `npm run build:cloudflare`, then run `npx wrangler@4.152.0 dev`. Open `http://127.0.0.1:8787/profile`. The CRA server (`npm start`, port 3000) also forwards `/api/community/*` to this local Worker on port 8787 using `src/setupProxy.js`; restart CRA after adding/changing that proxy. Both servers must run for account features on port 3000. The proxy validates browser Origin before forwarding to the loopback Worker, and production does not use it. The legacy PHP backend does not implement these endpoints. New databases can use the full `cloudflare/schema.sql`, which includes both admin and visitor migrations. No visitor data is seeded or imported automatically.
+
+All movie and TV details pages show a bookmark/watchlist control, including for guests. Guests get a keyboard-accessible login popup; signing in completes the requested save, without toggling off a previously saved title. The popup links to `/signup` and returns the new account to the selected details page. Saved lists and the private profile are at `/profile` (`/account` remains an alias). The profile displays the signed-in visitor's username and email; it is not a public profile directory. Initial background account failures do not display a generic account banner on each title; explicit sign-in/save failures still show actionable errors and do not pretend that anything was saved.
+
+Visitors register with a unique public username, email and password (12 characters minimum, 128 UTF-8 bytes maximum). Email addresses are not verified; an account does not establish ownership of its submitted email. There is no email delivery, forgotten-password recovery or visitor password-change screen yet. Never reuse an admin password for a visitor account.
+
+Favorites and watchlists are private to the signed-in visitor, persist in D1 and distinguish movie and TV IDs. The profile has separate Watchlist and Favorites tabs, global per-list counts, movie/TV filters and poster cards. Library pagination is 50 entries within the selected list/filter; pagination controls appear only when needed. Counts come from the database across the full saved collection, not the current page. Titles and poster paths are snapshots from the details page. Failed-poster fallbacks and explicit empty/loading/error states are supported. Removing a title affects only the selected list. Saved buttons use dedicated styles to avoid global Bootstrap outline-button color conflicts.
+
+Signup, login and mutations have database-backed rate limits, same-origin checks and CSRF validation. Sessions expire after 30 minutes idle or eight hours total. Visitor session identifiers are stored only as keyed digests. Community reviews and ratings are currently paused: their interface and background requests have been removed, and GET/PUT/DELETE review endpoints return 404 while COMMUNITY_REVIEWS_ENABLED is false in cloudflare/visitors.mjs. Existing review rows are retained; title-state responses no longer expose reviews. TMDB metadata ratings are unaffected. No saved-list action affects streaming rights or source availability.
+
+Run `node scripts/verify-visitors.cjs` for isolated backend security and persistence tests. After the production build completes, `node scripts/verify-visitors-browser.cjs` tests registration, login, collection tabs/filters, readable saved states, failure/retry and removal of reviews through the actual React bundle and Worker handlers in Chrome at phone/desktop widths, using isolated SQLite and mocked TMDB metadata. These are not deployed D1 or real-device tests.
+
+## Registered-user activity dashboard
+
+The Worker admin dashboard's **Users** tab shows registered visitor accounts and distinct daily, 7-day and 30-day active accounts, a responsive chart and an accessible exact-values table. It excludes separate admin accounts and anonymous visitors. It does not count verified humans, concurrent viewers or successful movie playback. An account used on two devices is still one account.
+
+After installing the visitor migration above, apply the additive activity migration before deploying this version:
+
+```powershell
+npx wrangler@4.152.0 d1 execute cinehub --remote --file=cloudflare/migrations/20261026_user_activity.sql
+```
+
+Use `--local` for local preview. The full schema already includes this migration. `visitor_daily_activity` records one row per account per UTC date, through successful authentication and authenticated account/API requests. The React app sends a visible-route activity request and throttles interaction checks to at most one per five minutes. There is no background interval keeping idle tabs active. Activity checks do not create or rotate login-form cookies. Signed-out requests, invalid/expired sessions and failed logins do not count. Session activity itself is bounded by the normal 30-minute idle and eight-hour absolute session expiry.
+
+Daily = today (UTC); weekly = today and the previous six UTC dates; monthly = today and the previous 29 UTC dates. Each historical chart point uses the same rolling windows ending on that date, not summed daily totals. Earlier activity cannot be reconstructed: dates before migration/tracking start are shown as missing, and a partial-history message remains until 30 days of tracking exist. The tracking-start setting is inserted once and is preserved on repeated migrations. Blocked or failed requests and offline use cannot be recorded. No IP addresses or emails are stored in the daily-activity table.
+
+Counts come from D1 primary-session queries, are never cached and show a server refresh timestamp. The visible Users tab refreshes every 60 seconds or via its Refresh button; it is not a real-time online-presence counter. A failed refresh clears figures, chart and table instead of retaining stale data. `/admin/api/users.php` and `/admin/users.js` require an admin session; visitor sessions do not grant access.
+
+The Cloudflare dashboard now removes the unconnected Optimization/feature-flag controls, Cache Metrics table and Recorded Engagement Events card. Recorded page views, searches, provider clicks, client API performance, movie management and streaming availability remain. Existing data tables/APIs and the legacy PHP dashboard are preserved; the new user report runs in the Worker admin, not the separate PHP/MySQL admin.
+
+`node scripts/verify-user-stats.cjs` verifies unique counts, UTC/window boundaries, missing history, repeatable migrations and access controls. `node scripts/verify-cloudflare.cjs --browser` checks the chart, exact table, responsive admin layouts, outage clearing and recovery with isolated SQLite fixtures. Visitor browser checks cover 320px/390px phones, 844px landscape, 768px tablet and 1440px desktop, including short-height dialogs and long private email addresses. These emulate viewports; they do not certify every physical phone/browser or on-screen keyboard.
+
+## Admin sessions and recovery
 
 - Sign in with either the provisioned username or email, case-insensitively. Unknown accounts and incorrect passwords show the same generic message. There is no public registration or email password-reset service.
 - Login forms use signed, short-lived CSRF tokens; authenticated mutations and logout require a session CSRF token. Cross-origin writes are rejected. Login and password-change requests have separate database-backed rate limits and body-size limits.

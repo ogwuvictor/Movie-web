@@ -3,6 +3,7 @@ import { trackProviderClick } from '../utils/analyticsService';
 import { useParams, Link } from 'react-router-dom';
 import { processProviders, generateRedirectUrl } from '../utils/providerLinkService';
 import StreamingModal from './StreamingModal';
+import TitleCommunity from './TitleCommunity';
 import './SeriesBrowser.css';
 
 const TVShowDetails = () => {
@@ -208,6 +209,7 @@ const TVShowDetails = () => {
                 </div>
 
                 <p className="movie-overview">{tvDetails.overview}</p>
+                <TitleCommunity type="tv" id={Number(id)} title={tvDetails.name} posterPath={tvDetails.poster_path} />
                 
                 {tvDetails.genres && (
                   <div className="netflix-genres mb-4">

@@ -105,6 +105,33 @@ const createDatabase = require('./cloudflare-test-db.cjs');
         await page.getByLabel('TMDB movie ID',{exact:true}).fill('552');await page.getByLabel('Movie title',{exact:true}).fill('Browser QA');await page.getByLabel('Availability',{exact:true}).selectOption('false');
         await page.getByRole('button',{name:'Save availability',exact:true}).click();await page.getByRole('button',{name:'Edit Browser QA',exact:true}).waitFor();
         page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Remove Browser QA',exact:true}).click();await page.getByRole('status').filter({hasText:'Availability record removed.'}).waitFor();
+        // Isolated registered-user fixtures: 5 total, 1 daily, 2 weekly, 3 monthly.
+        db.sql.exec("UPDATE visitor_activity_settings SET started_at=datetime('now','-60 days')");
+        for(let id=1;id<=5;id++)db.sql.prepare('INSERT INTO visitors(id,username,email,password_hash) VALUES (?,?,?,?)').run(id,'stats-user-'+id,'stats-user-'+id+'@example.invalid','not-a-login-hash');
+        for(const [id,days] of [[1,0],[1,1],[2,6],[3,20],[5,30]])db.sql.prepare("INSERT INTO visitor_daily_activity(user_id,activity_date,last_seen) VALUES (?,date('now',?),unixepoch())").run(id,'-'+days+' days');
+        await page.goto('http://127.0.0.1:8788/admin/');
+        for(const width of [320,390,768,1440]) {
+          await page.setViewportSize({width,height:900});
+          await page.locator('[data-section="users"]').click();
+          await page.locator('#registeredUsers').filter({hasText:'5'}).waitFor();
+          assert.equal(await page.locator('#dailyUsers').textContent(),'1');
+          assert.equal(await page.locator('#weeklyUsers').textContent(),'2');
+          assert.equal(await page.locator('#monthlyUsers').textContent(),'3');
+          assert.equal(await page.locator('#userActivityChart polyline').count(),3);
+          assert.equal(await page.locator('#userActivityTable tr').count(),30);
+          assert.equal(await page.locator('[data-section="optimization"],#cacheMetricsTable,#totalEngagement').count(),0);
+          assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Admin users dashboard must fit '+width+'px');
+          await page.screenshot({path:path.join(__dirname,'../cloudflare/generated/admin-users-'+width+'.png'),fullPage:true});
+        }
+        await page.route('**/admin/api/users.php',route=>route.fulfill({status:503,json:{error:'Temporary database outage'}}));
+        await page.getByRole('button',{name:'Refresh',exact:true}).click();
+        await page.locator('#registeredUsers').filter({hasText:'Unavailable'}).waitFor();
+        assert.equal(await page.locator('#userActivityChart polyline').count(),0);
+        assert.equal(await page.locator('#userActivityTable tr').count(),0);
+        await page.unroute('**/admin/api/users.php');
+        await page.getByRole('button',{name:'Refresh',exact:true}).click();
+        await page.locator('#registeredUsers').filter({hasText:'5'}).waitFor();
+        console.log('PASS admin user cards, unique active-user chart/table, 320/390/768/1440px layouts, removed unused sections, outage clearing and recovery.');
         assert.deepEqual(errors,[]);
         console.log(JSON.stringify({browserAdmin:'passed',databaseToDashboardCounts:'passed',outageClearsOldCounts:'passed',recovery:'passed',catalogEditing:'passed',authentication:'server-side session from real password login; production sign-in not tested'}));
         const visitor=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});

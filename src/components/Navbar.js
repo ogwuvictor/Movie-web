@@ -96,6 +96,7 @@ function Navbar({searchText, setSearchText}){
     const navigationLinks = <ul className="navbar-nav me-auto mb-2 mb-lg-0">
       <li className="nav-item"><Link className="nav-link active" aria-current="page" to="/" onClick={() => setIsNavOpen(false)}>Home</Link></li>
       <li className="nav-item"><Link className="nav-link" to="/about" onClick={() => setIsNavOpen(false)}>About</Link></li>
+      <li className="nav-item"><Link className="nav-link" to="/profile" onClick={() => setIsNavOpen(false)}>Profile</Link></li>
       <TVGenreDropdown />
       <GenreDropdownPortal />
     </ul>;

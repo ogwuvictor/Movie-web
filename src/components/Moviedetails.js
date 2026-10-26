@@ -6,6 +6,7 @@ import { useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { processProviders, generateRedirectUrl } from '../utils/providerLinkService';
 import StreamingModal from './StreamingModal';
+import TitleCommunity from './TitleCommunity';
 import { validateSelection } from '../streaming/streamingServers';
 
 const MovieDetails = () => {
@@ -239,6 +240,7 @@ const MovieDetails = () => {
                 </div>
 
                 <p className="movie-overview">{movieDetails.overview || 'No overview available.'}</p>
+                <TitleCommunity type="movie" id={Number(id)} title={movieDetails.title} posterPath={movieDetails.poster_path} />
                 
                 {movieDetails.genres && movieDetails.genres.length > 0 && (
                   <div className="netflix-genres mb-4">

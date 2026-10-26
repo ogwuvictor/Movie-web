@@ -42,7 +42,7 @@ test('failed season request offers retry instead of an endless loading state', a
   await screen.findByRole('button', { name: /^1 Season 1 episode 1 / });
   failSeason = true;
   fireEvent.change(screen.getByRole('combobox', { name: 'Season' }), { target: { value: '2' } });
-  expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load episodes');
+  expect((await screen.findByText('Unable to load episodes. Please try again.')).closest('[role="alert"]')).toBeInTheDocument();
   failSeason = false;
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
   expect(await screen.findByRole('button', { name: /^1 Season 2 episode 1 / })).toBeInTheDocument();

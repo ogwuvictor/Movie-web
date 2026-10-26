@@ -13,6 +13,7 @@ const changePasswordStart = dashboard.indexOf('// Change password');
 if (changePasswordStart < 0) throw Error('Password-change handler not found');
 dashboard = dashboard.slice(0, changePasswordStart) + dashboard.slice(changePasswordStart).replace('alert(data.message);', "alert(data.message); window.location.href = '/admin/login.php'; return;");
 dashboard = dashboard.replaceAll('maxlength="72"', 'maxlength="128"').replace('> 72)', '> 128)').replace('at most 72 UTF-8 bytes', 'at most 128 UTF-8 bytes');
+dashboard = require('./prepare-admin-users.cjs')(dashboard,read);
 let login = read('backend/admin/login.php').replace(/^<\?php[\s\S]*?\?>/, '');
 login = login.replace(/<\?php if \(\$error\): \?>[\s\S]*?<\?php endif; \?>/, '__LOGIN_ERROR__')
   .replace(/<\?= htmlspecialchars\(securityCsrf\(\), ENT_QUOTES, 'UTF-8'\) \?>/g, '__LOGIN_CSRF__')
@@ -25,4 +26,5 @@ for (const html of [dashboard, streaming, login]) if (html.includes('<?')) throw
 fs.mkdirSync(path.join(root, 'cloudflare/generated'), { recursive: true });
 fs.writeFileSync(path.join(root, 'cloudflare/generated/admin.mjs'), `// Generated from existing PHP admin markup; do not edit.\nexport const login = ${JSON.stringify(login)};
 export const dashboard = ${JSON.stringify(dashboard)};\nexport const streaming = ${JSON.stringify(streaming)};\nexport const streamingScript = ${JSON.stringify(read('backend/admin/streaming.js').replaceAll('../api/', '/admin/api/'))};\n`);
+fs.appendFileSync(path.join(root, 'cloudflare/generated/admin.mjs'), `export const usersScript = ${JSON.stringify(read('cloudflare/admin-users.js'))};\n`);
 console.log('Cloudflare admin templates prepared without PHP source.');

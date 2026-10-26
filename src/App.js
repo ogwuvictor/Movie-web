@@ -3,6 +3,8 @@ import { trackPageView } from './utils/analyticsService';
 
 import './App.css';
 import Home from './components/Home';
+import Account from './components/Account';
+import { Signup } from './components/VisitorLogin';
 import Navbar from './components/Navbar'
 // import Hero from './components/Hero'
 import About from './components/About'
@@ -21,10 +23,12 @@ import MovieTrailers from './components/Trailers';
 import ProviderRedirect from './components/ProviderRedirect';
 import './Mobile.css';
 import useRouteScrollRestoration from './hooks/useRouteScrollRestoration';
+import useVisitorActivity from './hooks/useVisitorActivity';
 
 
 function App() {
   useRouteScrollRestoration();
+  useVisitorActivity();
   const location = useLocation();
   const recordedNavigation = useRef(null);
   useEffect(() => {
@@ -44,6 +48,9 @@ function App() {
   <Routes>
 <Route path='/' Component={Home} />
 <Route path='/about' Component={About} />
+<Route path='/account' Component={Account} />
+<Route path='/profile' Component={Account} />
+<Route path='/signup' Component={Signup} />
 <Route path='/genre/:genreId' Component={GenreMovies} />
 <Route path='/tv/genre/:genreId' Component={TVShows} />
 <Route path='/tv/:id' Component={TVShowDetails} />

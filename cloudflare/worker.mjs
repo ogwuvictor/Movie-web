@@ -1,7 +1,9 @@
-import { dashboard, streaming, streamingScript } from './generated/admin.mjs';
+import { dashboard, streaming, streamingScript, usersScript } from './generated/admin.mjs';
 import { HttpError, authConfig, authorize, checkCsrf, setCookie } from './auth.mjs';
 import { api, json, limit, httpUrl } from './api.mjs';
 import { signIn, signOut, changePassword } from './login.mjs';
+import { visitors } from './visitors.mjs';
+import { adminUserStatistics } from './user-stats.mjs';
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 const safeUrl = value => { try { return httpUrl(value); } catch { return '#'; } };
 function movieRows(movies) {
@@ -33,9 +35,11 @@ export default {
       if(!env.DB)throw new HttpError(503,'Database binding is not configured.');
       // First read goes to the primary. No stale replica/cache is used for admin reports.
       const db=env.DB.withSession?env.DB.withSession('first-primary'):env.DB;
+      if(url.pathname==='/admin/api/users.php') return secure(await adminUserStatistics(request,env,db),null,url);
+      if(url.pathname.startsWith('/api/community/')) return secure(await visitors(request,env,db,url),null,url);
       if(url.pathname==='/api/health'&&request.method==='GET') {
         authConfig(env);
-        const required=['public_domain_movies','analytics_page_views','analytics_provider_clicks','analytics_search','analytics_engagement','performance_api_metrics','performance_system_metrics','optimization_ab_tests','optimization_feature_flags','optimization_cache_metrics','streaming_catalog','request_limits','admin_audit','admin_users','admin_sessions'];
+        const required=['public_domain_movies','analytics_page_views','analytics_provider_clicks','analytics_search','analytics_engagement','performance_api_metrics','performance_system_metrics','optimization_ab_tests','optimization_feature_flags','optimization_cache_metrics','streaming_catalog','request_limits','admin_audit','admin_users','admin_sessions','visitors','visitor_sessions','visitor_library','visitor_reviews','visitor_daily_activity','visitor_activity_settings'];
         const schema=await db.prepare(`SELECT COUNT(*) count FROM sqlite_master WHERE type='table' AND name IN (${required.map(()=>'?').join(',')})`).bind(...required).first();
         if(schema.count!==required.length)throw new HttpError(503,'The D1 schema is incomplete.');
         if (!(await db.prepare('SELECT COUNT(*) count FROM admin_users WHERE disabled=0').first()).count) throw new HttpError(503,'Create the admin account before signing in.');
@@ -64,6 +68,7 @@ export default {
       const identity=await authorize(request,env,db);
       if(request.method!=='GET')throw new HttpError(405,'Method not allowed.');
       if(url.pathname==='/admin/streaming.js')return secure(new Response(streamingScript,{headers:{'Content-Type':'application/javascript; charset=utf-8'}}),null,url);
+      if(url.pathname==='/admin/users.js')return secure(new Response(usersScript,{headers:{'Content-Type':'application/javascript; charset=utf-8'}}),null,url);
       if(!['/admin','/admin/','/admin/index.php','/admin/login.php','/admin/streaming.php'].includes(url.pathname))throw new HttpError(404,'Admin page not found.');
       if(url.pathname==='/admin'||url.pathname==='/admin/login.php')return secure(new Response(null,{status:302,headers:{Location:'/admin/'}}),null,url);
       nonce=crypto.randomUUID().replaceAll('-','');
