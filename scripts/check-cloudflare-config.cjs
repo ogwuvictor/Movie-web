@@ -10,4 +10,4 @@ if(!fs.existsSync(path.join(root,'build/index.html'))) failures.push('Run npm ru
 if(config.assets?.directory!=='./build') failures.push('Static assets must use ./build, never the repository root.');
 if(!config.assets?.run_worker_first?.includes('/admin/*') || !config.assets?.run_worker_first?.includes('/api/*')) failures.push('API and admin paths must run the Worker before SPA fallback.');
 if(failures.length) {console.error('Not ready to deploy:\n'+failures.map(message=>'- '+message).join('\n'));process.exitCode=1;}
-else console.log('Offline package checks passed. Cloudflare Access secrets/policy, remote schema, real sign-in and live API checks are still required before launch.');
+else console.log('Offline package checks passed. Admin session secret, login migration/account, real sign-in and live API checks are still required before launch.');

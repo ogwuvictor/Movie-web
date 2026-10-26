@@ -1,6 +1,7 @@
 import { dashboard, streaming, streamingScript } from './generated/admin.mjs';
-import { HttpError, accessConfig, authorize, checkCsrf } from './auth.mjs';
+import { HttpError, authConfig, authorize, checkCsrf, setCookie } from './auth.mjs';
 import { api, json, limit, httpUrl } from './api.mjs';
+import { signIn, signOut, changePassword } from './login.mjs';
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
 const safeUrl = value => { try { return httpUrl(value); } catch { return '#'; } };
 function movieRows(movies) {
@@ -25,6 +26,7 @@ export default {
       if (/^\/(?:backend|cloudflare|scripts|\.git)(?:\/|$)/.test(url.pathname) || ['/config.php','/security.php','/database.sql'].includes(url.pathname)) throw new HttpError(404,'Not found.');
       if(!isBackend)return env.ASSETS.fetch(request);
       if(url.protocol!=='https:'&&!['localhost','127.0.0.1','[::1]'].includes(url.hostname))throw new HttpError(403,'HTTPS is required.');
+      if (request.headers.get('Sec-Fetch-Site') === 'cross-site' && !['GET','HEAD'].includes(request.method)) throw new HttpError(403,'Origin not allowed.');
       const origin=request.headers.get('Origin');
       if(origin&&origin!==url.origin)throw new HttpError(403,'Origin not allowed.');
       if(url.pathname==='/admin'&&request.method==='GET')return secure(new Response(null,{status:302,headers:{Location:'/admin/'}}),null,url);
@@ -32,15 +34,22 @@ export default {
       // First read goes to the primary. No stale replica/cache is used for admin reports.
       const db=env.DB.withSession?env.DB.withSession('first-primary'):env.DB;
       if(url.pathname==='/api/health'&&request.method==='GET') {
-        accessConfig(env);
-        const required=['public_domain_movies','analytics_page_views','analytics_provider_clicks','analytics_search','analytics_engagement','performance_api_metrics','performance_system_metrics','optimization_ab_tests','optimization_feature_flags','optimization_cache_metrics','streaming_catalog','request_limits','admin_audit'];
+        authConfig(env);
+        const required=['public_domain_movies','analytics_page_views','analytics_provider_clicks','analytics_search','analytics_engagement','performance_api_metrics','performance_system_metrics','optimization_ab_tests','optimization_feature_flags','optimization_cache_metrics','streaming_catalog','request_limits','admin_audit','admin_users','admin_sessions'];
         const schema=await db.prepare(`SELECT COUNT(*) count FROM sqlite_master WHERE type='table' AND name IN (${required.map(()=>'?').join(',')})`).bind(...required).first();
         if(schema.count!==required.length)throw new HttpError(503,'The D1 schema is incomplete.');
-        return secure(json({status:'configured',checkedAt:new Date().toISOString(),liveAccessLogin:'requires a deployed browser sign-in test'}),null,url);
+        if (!(await db.prepare('SELECT COUNT(*) count FROM admin_users WHERE disabled=0').first()).count) throw new HttpError(503,'Create the admin account before signing in.');
+        return secure(json({status:'configured',authentication:'password',checkedAt:new Date().toISOString(),liveSignIn:'requires a deployed browser sign-in test'}),null,url);
       }
+      if (url.pathname === '/admin/login.php') {
+        nonce=crypto.randomUUID().replaceAll('-','');
+        return secure(await signIn(request,env,db,nonce),nonce,url);
+      }
+      if (url.pathname === '/admin/logout.php') return secure(await signOut(request,env,db),null,url);
+      if (url.pathname === '/admin/change_password.php') return secure(await changePassword(request,env,db),null,url);
       if(url.pathname.startsWith('/admin/api/')) {
-        // Access must protect /admin/* at the edge, including all private API routes.
-        const identity=await authorize(request,env);
+        // Private reports and mutations require a server-side session.
+        const identity=await authorize(request,env,db);
         if(!['GET','HEAD'].includes(request.method))checkCsrf(request,identity);
         const endpoint=new URL(url);endpoint.pathname=endpoint.pathname.replace('/admin/api/','/api/');
         return secure(await api(request,env,db,endpoint),null,url);
@@ -52,15 +61,8 @@ export default {
         return secure(await api(request,env,db,url),null,url);
       }
       await limit(db,request,'admin-pages',120);
-      const identity=await authorize(request,env);
-      if(url.pathname==='/admin/logout.php') {
-        if(request.method!=='POST')throw new HttpError(405,'Method not allowed.');
-        if(Number(request.headers.get('Content-Length'))>32768)throw new HttpError(413,'Request too large.');
-        const form=new URLSearchParams(await request.text());checkCsrf(request,identity,form.get('csrf_token'));
-        const cookie=`CF_Authorization=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${url.protocol==='https:'?'; Secure':''}`;
-        return secure(new Response(null,{status:303,headers:{Location:'/cdn-cgi/access/logout','Set-Cookie':cookie}}),null,url);
-      }
-      if(request.method!=='GET')throw new HttpError(405,'Method not allowed. Sign-in is managed by Cloudflare Access.');
+      const identity=await authorize(request,env,db);
+      if(request.method!=='GET')throw new HttpError(405,'Method not allowed.');
       if(url.pathname==='/admin/streaming.js')return secure(new Response(streamingScript,{headers:{'Content-Type':'application/javascript; charset=utf-8'}}),null,url);
       if(!['/admin','/admin/','/admin/index.php','/admin/login.php','/admin/streaming.php'].includes(url.pathname))throw new HttpError(404,'Admin page not found.');
       if(url.pathname==='/admin'||url.pathname==='/admin/login.php')return secure(new Response(null,{status:302,headers:{Location:'/admin/'}}),null,url);
@@ -71,6 +73,7 @@ export default {
       const html=(isCatalog?streaming:dashboard).replace(/__CSRF__|__NONCE__|__MOVIE_ROWS__/g,marker=>values[marker]);
       return secure(new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8'}}),nonce,url);
     } catch(error) {
+      if (error instanceof HttpError && error.status === 401 && request.method === 'GET' && ['/admin/','/admin/index.php','/admin/streaming.php'].includes(url.pathname)) return secure(new Response(null,{status:303,headers:{Location:'/admin/login.php','Set-Cookie':setCookie(request,'',0)}}),null,url);
       const status=error instanceof HttpError?error.status:/UNIQUE constraint failed/.test(error.message)?409:503;
       if(status===503)console.error('Cloudflare backend request failed:',error.message);
       return secure(json({error:error instanceof HttpError?error.message:status===409?'A record with this identifier already exists.':'Service unavailable. Try again later.'},status),nonce,url);

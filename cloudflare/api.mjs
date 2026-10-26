@@ -43,7 +43,7 @@ export async function limit(db, request, scope, max = 120, seconds = 60) {
 }
 async function admin(request, env, db, mutation = false) {
   await limit(db, request, 'admin', 120);
-  const identity = await authorize(request, env);
+  const identity = await authorize(request, env, db);
   if (mutation) checkCsrf(request, identity);
   return identity;
 }

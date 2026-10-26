@@ -16,8 +16,9 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "build:cloudflare": "npm run build && node scripts/prepare-cloudflare.cjs",
-    "test:cloudflare": "node scripts/prepare-cloudflare.cjs && node scripts/verify-cloudflare.cjs",
-    "check:cloudflare": "node scripts/check-cloudflare-config.cjs"
+    "test:cloudflare": "node scripts/prepare-cloudflare.cjs && node scripts/verify-cloudflare.cjs && node scripts/verify-admin-auth.cjs",
+    "check:cloudflare": "node scripts/check-cloudflare-config.cjs",
+    "admin:create": "node scripts/create-admin.mjs"
   },
   "eslintConfig": {
     "extends": [

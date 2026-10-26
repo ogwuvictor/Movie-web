@@ -1,40 +1,38 @@
-// Exercises the real Worker code with SQLite and signed, temporary Access fixtures.
+// Exercises the real Worker code with SQLite and temporary password/session fixtures.
 // This does not test Cloudflare's live sign-in service or a deployed D1 database.
 const assert = require('assert/strict');
 const fs = require('fs');
 const path = require('path');
-const { webcrypto } = require('crypto');
+const { randomBytes } = require('crypto');
 const createDatabase = require('./cloudflare-test-db.cjs');
-const encoder = new TextEncoder();
-const encode = value => Buffer.from(typeof value === 'string' ? value : JSON.stringify(value)).toString('base64url');
 (async () => {
   const db = createDatabase();
   const { default: worker } = await import('../cloudflare/worker.mjs');
-  const { hash } = await import('../cloudflare/auth.mjs');
-  const pair = await webcrypto.subtle.generateKey({ name:'RSASSA-PKCS1-v1_5', modulusLength:2048, publicExponent:new Uint8Array([1,0,1]), hash:'SHA-256' },true,['sign','verify']);
-  const jwk = { ...await webcrypto.subtle.exportKey('jwk',pair.publicKey), kid:'temporary-test-key', alg:'RS256', use:'sig' };
+  const { mac } = await import('../cloudflare/auth.mjs');
+  const { accountSql } = await import('./create-admin.mjs');
+  const password = 'QA-private-' + randomBytes(16).toString('hex');
+  db.sql.exec(await accountSql('qa-admin', 'qa@example.invalid', password));
   const originalFetch=global.fetch;
-  global.fetch=async (url,options) => String(url)==='https://qa.cloudflareaccess.com/cdn-cgi/access/certs' ? Response.json({keys:[jwk]}) : originalFetch(url,options);
-  const env={DB:db,ACCESS_TEAM_DOMAIN:'qa.cloudflareaccess.com',ACCESS_AUD:'qa-only-audience',ADMIN_EMAILS:'qa@example.invalid',ASSETS:{fetch:async()=>new Response('Static fixture')}};
-  const claims={iss:'https://qa.cloudflareaccess.com',aud:['qa-only-audience'],sub:'temporary-qa',email:'qa@example.invalid',iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+3600};
-  async function sign(payload=claims) {
-    const input=encode({alg:'RS256',kid:jwk.kid})+'.'+encode(payload);
-    return input+'.'+Buffer.from(await webcrypto.subtle.sign('RSASSA-PKCS1-v1_5',pair.privateKey,encoder.encode(input))).toString('base64url');
-  }
-  const token=await sign();const csrf=await hash('cinehub-csrf:'+token);
-  const call=async (route,{method='GET',data,auth=false,session=token,token:csrfValue=csrf,headers={}}={}) => worker.fetch(new Request('https://site.example'+(auth&&route.startsWith('/api/')&&route!=='/api/health'?route.replace('/api/','/admin/api/'):route),{method,headers:{...(auth?{Cookie:'CF_Authorization='+session,'X-CSRF-Token':csrfValue}:{}),...(data===undefined?{}:{'Content-Type':'application/json'}),...headers},...(data===undefined?{}:{body:typeof data==='string'?data:JSON.stringify(data)})}),env);
+  const env={DB:db,ADMIN_SESSION_SECRET:randomBytes(32).toString('hex'),ASSETS:{fetch:async()=>new Response('Static fixture')}};
+  const formResponse=await worker.fetch(new Request('https://site.example/admin/login.php'),env);
+  const formHtml=await formResponse.text();
+  const formToken=formHtml.match(/name="csrf_token" value="([^"]+)"/)[1];
+  const signedIn=await worker.fetch(new Request('https://site.example/admin/login.php',{method:'POST',headers:{Cookie:formResponse.headers.get('Set-Cookie').split(';')[0],'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({csrf_token:formToken,username:'qa-admin',password})}),env);
+  assert.equal(signedIn.status,303,await signedIn.clone().text());
+  const token=signedIn.headers.get('Set-Cookie').split(';')[0].split('=')[1];
+  const csrf=await mac(env,'csrf:'+token);
+  const call=async (route,{method='GET',data,auth=false,session=token,token:csrfValue=csrf,headers={}}={}) => worker.fetch(new Request('https://site.example'+(auth&&route.startsWith('/api/')&&route!=='/api/health'?route.replace('/api/','/admin/api/'):route),{method,headers:{...(auth?{Cookie:'__Host-cinehub_session='+session,'X-CSRF-Token':csrfValue}:{}),...(data===undefined?{}:{'Content-Type':'application/json'}),...headers},...(data===undefined?{}:{body:typeof data==='string'?data:JSON.stringify(data)})}),env);
   try {
     assert.equal((await call('/api/health')).status,200);
     assert.equal((await call('/admin')).status,302);
     for (const file of ['/backend/database.sql','/config.php','/cloudflare/schema.sql']) assert.equal((await call(file)).status,404);
-    assert.equal((await worker.fetch(new Request('https://site.example/admin/'),{...env,ACCESS_AUD:''})).status,503);
-    assert.equal((await call('/admin/')).status,401);
+    assert.equal((await worker.fetch(new Request('https://site.example/admin/'),{...env,ADMIN_SESSION_SECRET:''})).status,503);
+    assert.equal((await call('/admin/')).status,303);
     assert.equal((await call('/api/analytics.php?dashboard=true')).status,401);
     for(const route of ['/api/movies.php','/api/streaming-availability.php','/api/performance.php?type=feature_flags']) assert.equal((await call(route,{method:'POST',data:{}})).status,401);
-    for(const invalid of [{...claims,exp:1},{...claims,aud:['other']},{...claims,email:'intruder@example.invalid'},{...claims,iss:'https://evil.example'}]) assert.equal((await call('/admin/',{auth:true,session:await sign(invalid)})).status,401);
-    assert.equal((await call('/admin/',{auth:true,session:token.slice(0,-3)+'abc'})).status,401);
+    assert.equal((await call('/admin/api/analytics.php?dashboard=true',{auth:true,session:token.slice(0,-3)+'abc'})).status,401);
     const dashboard=await call('/admin/',{auth:true});assert.equal(dashboard.status,200);
-    const html=await dashboard.text();assert(!html.includes('<?'));assert(html.includes(csrf));assert(!html.includes(token));assert(!html.includes('data-bs-target="#changePasswordModal"'));
+    const html=await dashboard.text();assert(!html.includes('<?'));assert(html.includes(csrf));assert(!html.includes(token));assert(html.includes('data-bs-target="#changePasswordModal"'));
     assert.equal((await call('/api/movies.php',{method:'POST',auth:true,token:'wrong',data:{}})).status,403);
     assert.equal((await call('/api/movies.php',{method:'POST',auth:true,data:'{'})).status,400);
     assert.equal((await call('/api/movies.php',{method:'POST',auth:true,data:{title:'x'.repeat(33000)}})).status,413);
@@ -62,8 +60,8 @@ const encode = value => Buffer.from(typeof value === 'string' ? value : JSON.str
     assert.equal((await call('/api/streaming-availability.php',{method:'DELETE',auth:true,data:{tmdbId:551}})).status,200);
     assert.equal((await call('/api/movies.php?id='+id,{method:'DELETE',auth:true})).status,200);
     assert.equal((await call('/api/movies.php?id='+id)).status,404);
-    assert.equal(db.sql.prepare('SELECT COUNT(*) n FROM admin_audit').get().n,5);
-    console.log(JSON.stringify({cloudflareWorker:'passed with local SQLite adapter',accessSignatureClaimsAndAllowlist:'passed',csrf:'passed',movieCrud:'passed',catalogCrud:'passed',realDatabaseAnalyticsTotals:'passed',performanceMetrics:'passed',auditLog:'passed',productionCloudflareLogin:'not tested'}));
+    assert.equal(db.sql.prepare("SELECT COUNT(*) n FROM admin_audit WHERE action NOT LIKE 'auth.%'").get().n,5);
+    console.log(JSON.stringify({cloudflareWorker:'passed with local SQLite adapter',passwordLoginAndSession:'passed',csrf:'passed',movieCrud:'passed',catalogCrud:'passed',realDatabaseAnalyticsTotals:'passed',performanceMetrics:'passed',auditLog:'passed',productionPasswordLogin:'not tested'}));
     if(process.argv.includes('--browser')) {
       const buildRoot=path.resolve(__dirname,'../build');
       env.ASSETS.fetch=async request=>{
@@ -89,7 +87,7 @@ const encode = value => Buffer.from(typeof value === 'string' ? value : JSON.str
       });
       await new Promise(resolve=>server.listen(8788,'127.0.0.1',resolve));
       try {
-        const context=await browser.newContext();await context.addCookies([{name:'CF_Authorization',value:token,url:'http://127.0.0.1:8788',httpOnly:true,sameSite:'Strict'}]);
+        const context=await browser.newContext();await context.addCookies([{name:'cinehub_session',value:token,url:'http://127.0.0.1:8788',httpOnly:true,sameSite:'Strict'}]);
         const page=await context.newPage();const errors=[];page.on('pageerror',error=>errors.push(error.message));
         await page.goto('http://127.0.0.1:8788/admin/');
         await page.locator('[data-section="analytics"]').click();
@@ -108,7 +106,7 @@ const encode = value => Buffer.from(typeof value === 'string' ? value : JSON.str
         await page.getByRole('button',{name:'Save availability',exact:true}).click();await page.getByRole('button',{name:'Edit Browser QA',exact:true}).waitFor();
         page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Remove Browser QA',exact:true}).click();await page.getByRole('status').filter({hasText:'Availability record removed.'}).waitFor();
         assert.deepEqual(errors,[]);
-        console.log(JSON.stringify({browserAdmin:'passed',databaseToDashboardCounts:'passed',outageClearsOldCounts:'passed',recovery:'passed',catalogEditing:'passed',authentication:'signed local Access fixture; live Cloudflare setup still required'}));
+        console.log(JSON.stringify({browserAdmin:'passed',databaseToDashboardCounts:'passed',outageClearsOldCounts:'passed',recovery:'passed',catalogEditing:'passed',authentication:'server-side session from real password login; production sign-in not tested'}));
         const visitor=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
         await visitor.route('**/api.themoviedb.org/3/**',route=>{
           const pathname=new URL(route.request().url()).pathname;

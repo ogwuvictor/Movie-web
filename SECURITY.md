@@ -1,6 +1,6 @@
 # Security review — 23 October 2026
 
-The later Cloudflare Worker + D1 path is documented in [CLOUDFLARE_DEPLOYMENT.md](CLOUDFLARE_DEPLOYMENT.md). It uses Cloudflare Access with verified JWTs and protected `/admin/api/*` routes instead of PHP password sessions. The PHP-specific session tests and configuration below apply to the retained PHP backend. Local fixtures do not verify live Access sign-in or deployed account policies.
+The Cloudflare Worker + D1 path now implements built-in username/email and password authentication; Cloudflare Access is not required by the code. See [CLOUDFLARE_DEPLOYMENT.md](CLOUDFLARE_DEPLOYMENT.md). It uses scrypt (N=65536, r=8, p=2), a separate runtime session secret, opaque server-side sessions, CSRF checks, login throttling, and private CLI account provisioning/recovery. There is no public registration or default account. Thirty-minute idle and eight-hour absolute session limits apply; logout, password changes, recovery, account disabling and secret rotation revoke sessions. Secure password hashing can exceed the Workers Free CPU limit: local tests do not prove production plan compatibility. The PHP-specific review below remains historical and applies to the retained PHP backend; existing PHP credentials are untouched.
 
 This update hardens the application; it is not a guarantee of 100% security or an independent penetration test. Production infrastructure and third-party providers are outside the local test environment.
 
