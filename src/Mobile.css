@@ -1,5 +1,6 @@
 /* Phone-only refinements. Keep the existing tablet and desktop rules intact. */
 .streaming-rotation-hint { display: none; }
+.movie-provider-note { display: none; }
 .streaming-viewport video { object-fit: contain; background: #000; }
 
 /* A provider may fullscreen its iframe or a native video may fullscreen itself. */
@@ -171,9 +172,9 @@
   .netflix-actions > a, .netflix-actions > button { min-height: 46px; padding: 12px 16px; }
   .movie-details-content .movie-actions {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    align-items: stretch;
+    align-items: start;
   }
   .movie-details-content .movie-actions > a,
   .movie-details-content .movie-actions > button {
@@ -181,7 +182,7 @@
     width: 100%;
     min-width: 0;
     min-height: 44px;
-    padding: 8px 10px;
+    padding: 10px 12px;
     font-size: .8125rem;
     line-height: 1.3;
     gap: 6px;
@@ -189,11 +190,17 @@
     border-radius: 6px;
     justify-content: center;
     text-align: center;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow-wrap: normal;
   }
   .movie-details-content .movie-actions > a i,
   .movie-details-content .movie-actions > button i { display: none; }
+  .movie-details-content .movie-actions .movie-action-trailer { background: #202020; color: #eee; border-color: #555; }
+  .movie-details-content .movie-actions .movie-action-watch { background: #fff; color: #111; border-color: #fff; }
+  .movie-details-content .movie-actions .movie-provider-action { grid-column: 1 / -1; min-height: 40px; background: transparent; border-color: #333; color: #bbb; font-size: .75rem; padding: 8px 12px; }
+  .movie-details-content .movie-actions .movie-provider-unavailable { display: none; }
+  .movie-details-content .movie-actions .movie-provider-note { display: flex; align-items: flex-start; justify-content: center; gap: 6px; grid-column: 1 / -1; margin: 2px 0 0; padding: 0 4px; color: #929292; font-size: .6875rem; line-height: 1.5; text-align: center; }
+  .movie-provider-note i { margin-top: 2px; }
   .movie-details-content .movie-actions > a:hover,
   .movie-details-content .movie-actions > button:hover { transform: none; }
   .movie-overview { text-align: left; line-height: 1.65; }

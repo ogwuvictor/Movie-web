@@ -12,12 +12,14 @@ Passwords use Node's native scrypt with N=65536, r=8, p=2 (64 MiB working memory
 | --- | --- |
 | Worker name | `cinehub` |
 | Branch | `main` |
-| Root directory | Repository root |
+| Root directory | Leave blank (repository root) |
 | Build command | `npm run build:cloudflare` |
 | Deploy command | `npx wrangler@4.152.0 deploy` |
 | Assets | `./build`, already configured in `wrangler.jsonc` |
 
 Use Workers Builds, not a static Pages-only upload. Keep development dependencies installed for CRA. The build is tested with `CI=true`; lint warnings are not suppressed. Never upload the repository root or PHP source as static assets. The configured D1 binding is `DB`, database name `cinehub`. Use the supplied database ID already in `wrangler.jsonc`.
+
+If Cloudflare reports **Failed: root directory not found** immediately after cloning, open Workers & Pages > cinehub > Settings > Build and clear the optional Root directory field, then save and retry. `package.json` and `wrangler.jsonc` are at the top level of `ogwuvictor/Movie-web`; there is no nested `movie-web` or `react-site/movie-web` directory in that Git repository. Do not enter a Windows path, GitHub URL, `src` or `build`. This dashboard setting is evaluated before any build command or Wrangler configuration can run, so a code change cannot repair a wrong root setting. See [Cloudflare Workers Builds configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/).
 
 ## Create the first admin privately
 

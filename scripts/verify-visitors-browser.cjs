@@ -33,12 +33,14 @@ const createDatabase = require('./cloudflare-test-db.cjs');
     const sizes = [{width:320,height:640},{width:390,height:844},{width:844,height:390},{width:768,height:1024},{width:1440,height:900}];
     for (const [sizeIndex, viewport] of sizes.entries()) {
       const {width,height}=viewport;
+      let showProviders=false;
       const context = await browser.newContext({ viewport, extraHTTPHeaders: { 'x-qa-ip': String(81+sizeIndex) } });
       await context.route('**/api.themoviedb.org/3/**', route => {
         const pathname = new URL(route.request().url()).pathname;
         let data = { results: [], genres: [] };
         if (/\/movie\/550$/.test(pathname)) data = { id: 550, title: 'QA movie', overview: 'Test film metadata', genres: [], runtime: 90, vote_average: 8 };
         if (/\/tv\/1399$/.test(pathname)) data = { id: 1399, name: 'QA series', overview: 'Test series metadata', genres: [], seasons: [], vote_average: 8 };
+        if(pathname.endsWith('/watch/providers')) data={results:showProviders?{US:{flatrate:[{provider_id:8,provider_name:'Netflix'}]}}:{}};
         return route.fulfill({ json: data });
       });
       await context.route('https://placehold.co/**',route=>route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="150"></svg>'}));
@@ -47,6 +49,14 @@ const createDatabase = require('./cloudflare-test-db.cjs');
       page.on('request',request=>{if(request.url().includes('/api/community/reviews'))reviewRequests.push(request.url());});
       const pass = 'QA-visitor-' + randomBytes(16).toString('hex'), email = 'browser' + width + (width===320?'a'.repeat(140):'') + '@example.invalid';
       await page.goto(base + '/moviedetails/550');
+      if(width<=575) {
+        await page.getByRole('button',{name:'Watch Now',exact:true}).waitFor();
+        const play=await page.locator('.movie-action-trailer').boundingBox(),watch=await page.locator('.movie-action-watch').boundingBox();
+        assert(Math.abs(play.y-watch.y)<1 && play.height>=44 && play.height<=48 && watch.height>=44 && watch.height<=48,'Phone playback buttons must share one compact row');
+        assert(await page.locator('.movie-provider-unavailable').isHidden());
+        assert(await page.locator('.movie-provider-note').isVisible());
+        await page.locator('.movie-actions').screenshot({path:path.join(root,'../cloudflare/generated/mobile-actions-'+width+'-unavailable.png')});
+      }
       await page.getByRole('button', { name: 'Add to watchlist', exact: true }).click();
       await page.getByRole('dialog', { name: 'Sign in to CineHub' }).waitFor();
       const dialogBounds=await page.getByRole('dialog').boundingBox();
@@ -137,6 +147,17 @@ const createDatabase = require('./cloudflare-test-db.cjs');
       assert.deepEqual(reviewRequests,[],'Disabled reviews must not be requested');
       fs.mkdirSync(path.join(root, '../cloudflare/generated'), { recursive: true });
       await page.screenshot({ path: path.join(root, '../cloudflare/generated/visitor-account-' + width + '.png'), fullPage: true });
+      if(width<=575) {
+        showProviders=true;
+        for(const detail of ['/moviedetails/550','/tv/1399']) {
+          await page.goto(base+detail);
+          await page.getByRole('button',{name:'Where to Watch',exact:true}).waitFor();
+          const a=await page.locator('.movie-action-trailer').boundingBox(),b=await page.locator('.movie-action-watch').boundingBox(),provider=await page.locator('.movie-provider-action').boundingBox();
+          assert(Math.abs(a.y-b.y)<1 && a.height<=48 && b.height<=48 && provider.height<=44,'Movie/TV actions must stay compact');
+          assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+        }
+        await page.locator('.movie-actions').screenshot({path:path.join(root,'../cloudflare/generated/mobile-actions-'+width+'-providers.png')});
+      }
       await context.close();
       console.log('PASS ' + width + 'px Chrome: redesigned auth/profile, guest login/signup, readable saved states, failure/retry, persistent favorites/watchlist, collection tabs/media filters, empty states, reviews removed, logout and no overflow.');
     }

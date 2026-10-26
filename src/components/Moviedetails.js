@@ -200,10 +200,10 @@ const MovieDetails = () => {
                 </div>
                 
                 <div className="netflix-actions movie-actions mb-4">
-                  <Link to={`/movietrailers/${id}`} className="netflix-play-btn">
+                  <Link to={`/movietrailers/${id}`} className="netflix-play-btn movie-action-trailer">
                     <i className="fas fa-play"></i> Play Trailer
                   </Link>
-                  <button type="button" className="netflix-play-btn" onClick={() => setShowStreamingModal(true)}>
+                  <button type="button" className="netflix-play-btn movie-action-watch" onClick={() => setShowStreamingModal(true)}>
                     <i className="fas fa-play"></i> Watch Now
                   </button>
                   
@@ -213,7 +213,7 @@ const MovieDetails = () => {
                       href={publicDomainData.download_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="netflix-info-btn"
+                      className="netflix-info-btn movie-provider-action"
                       style={{ textDecoration: 'none', backgroundColor: 'rgba(22, 163, 74, 0.8)' }}
                     >
                       <i className="fas fa-download"></i> Download
@@ -222,19 +222,19 @@ const MovieDetails = () => {
                     // Not Public Domain: Show Provider Links
                     processedProviders.length > 0 ? (
                       <button 
-                        className="netflix-info-btn"
+                        className="netflix-info-btn movie-provider-action"
                         onClick={() => setShowProvidersModal(true)}
                       >
                         <i className="fas fa-info-circle"></i> Where to Watch
                       </button>
                     ) : (
-                      <button 
-                        className="netflix-info-btn"
+                      <React.Fragment><button
+                        className="netflix-info-btn movie-provider-unavailable"
                         disabled
                         style={{ opacity: 0.5, cursor: 'not-allowed' }}
                       >
                         <i className="fas fa-info-circle"></i> Not available in your region
-                      </button>
+                      </button><span className="movie-provider-note"><i className="fas fa-info-circle" aria-hidden="true"></i> No watch providers found for your region.</span></React.Fragment>
                     )
                   )}
                 </div>

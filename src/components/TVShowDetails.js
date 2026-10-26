@@ -183,28 +183,28 @@ const TVShowDetails = () => {
                 </div>
                 
                 <div className="netflix-actions movie-actions mb-4">
-                  <Link to={`/tvtrailers/${id}`} className="netflix-play-btn">
+                  <Link to={`/tvtrailers/${id}`} className="netflix-play-btn movie-action-trailer">
                     <i className="fas fa-play"></i> Play Trailer
                   </Link>
-                  <button type="button" className="netflix-play-btn" disabled={!playbackEpisode}
+                  <button type="button" className="netflix-play-btn movie-action-watch" disabled={!playbackEpisode}
                     onClick={() => setShowStreamingModal(true)}>
                     <i className="fas fa-play"></i> Watch Now
                   </button>
                   {processedProviders.length > 0 ? (
                     <button 
-                      className="netflix-info-btn"
+                      className="netflix-info-btn movie-provider-action"
                       onClick={() => setShowProvidersModal(true)}
                     >
                       <i className="fas fa-info-circle"></i> Where to Watch
                     </button>
                   ) : (
-                    <button 
-                      className="netflix-info-btn"
+                    <React.Fragment><button
+                      className="netflix-info-btn movie-provider-unavailable"
                       disabled
                       style={{ opacity: 0.5, cursor: 'not-allowed' }}
                     >
                       <i className="fas fa-info-circle"></i> Not available in your region
-                    </button>
+                    </button><span className="movie-provider-note"><i className="fas fa-info-circle" aria-hidden="true"></i> No watch providers found for your region.</span></React.Fragment>
                   )}
                 </div>
 
