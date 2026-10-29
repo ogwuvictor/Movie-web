@@ -1,19 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom';
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import GenreDropdownPortal from './GenreDropdownPortal';
 import TVGenreDropdown from './TVGenreDropdown';
-import { useDebounce } from '../hooks/useDebounce';
 import './NavbarSearch.css';
 
-function Navbar({searchText, setSearchText}){
+function Navbar(){
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const [inputValue, setInputValue] = useState(searchText || '');
   const [isPhone, setIsPhone] = useState(() => window.matchMedia('(max-width: 575.98px)').matches);
-  const pendingSearch = useRef(null);
   const drawerRef = useRef(null);
   const toggleRef = useRef(null);
-  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
@@ -51,46 +47,11 @@ function Navbar({searchText, setSearchText}){
   }, [isPhone, isNavOpen]);
 
   useEffect(() => {
-    if (window.matchMedia('(max-width: 575.98px)').matches) setIsNavOpen(false);
+    setIsNavOpen(false);
   }, [location.pathname]);
   
-  const debouncedSearch = useDebounce(inputValue, 500);
-
-  // Route changes must never submit an old, still-debouncing search.
-  useEffect(() => {
-    pendingSearch.current = null;
-    const query = location.pathname === '/search' ? new URLSearchParams(location.search).get('q') || '' : '';
-    setInputValue(query);
-    setSearchText(query);
-  }, [location.pathname, location.search, setSearchText]);
-
-  useEffect(() => {
-    if (pendingSearch.current === null || pendingSearch.current !== debouncedSearch) return;
-    pendingSearch.current = null;
-    const query = debouncedSearch.trim();
-    setSearchText(query);
-    if (query || location.pathname === '/search') {
-      navigate(query ? '/search?q=' + encodeURIComponent(query) : '/search', { replace: location.pathname === '/search' });
-    }
-  }, [debouncedSearch, location.pathname, navigate, setSearchText]);
-
-  const updateText = event => {
-    pendingSearch.current = event.target.value;
-    setInputValue(event.target.value);
-  };
-
  const toggleNav = () => {
    setIsNavOpen(!isNavOpen);
- }
- 
- const handleSearchSubmit = (e) => {
-   e.preventDefault();
-   const query = inputValue.trim();
-   pendingSearch.current = null;
-   if (query) {
-     setSearchText(query);
-     navigate('/search?q=' + encodeURIComponent(query));
-   }
  }
  
     const navigationLinks = <ul className="navbar-nav me-auto mb-2 mb-lg-0">
@@ -103,7 +64,7 @@ function Navbar({searchText, setSearchText}){
 
     return(
       <div>
-         <nav className="navbar navbar-expand-lg bg-body-tertiary">
+         <nav className={`navbar navbar-expand-lg bg-body-tertiary ${location.pathname === '/search' ? 'navbar-on-search' : ''}`}>
   <div className="container-fluid">
     <Link className="navbar-brand" to={"/"}>CineHub</Link>
     <button 
@@ -120,19 +81,10 @@ function Navbar({searchText, setSearchText}){
     </button>
     <div className={`collapse navbar-collapse ${isNavOpen ? 'show' : ''}`} id="navbarSupportedContent">
       {!isPhone && navigationLinks}
-      <form className="d-flex navbar-search" role="search" onSubmit={handleSearchSubmit}>
-        <input 
-          className="form-control"
-          type="search" 
-          placeholder="Search movies, TV shows, people..." 
-          aria-label="Search"
-          onChange={updateText}
-          value={inputValue}
-        />
-        <button className="btn btn-outline-dark" type="submit" aria-label="Search titles">
-          <i className="fas fa-search"></i>
-        </button>
-      </form>
+      {location.pathname !== '/search' && <Link className="navbar-search-launcher" to="/search" aria-label="Search movies and TV shows">
+        <span>Search movies, TV shows...</span>
+        <i className="fas fa-search" aria-hidden="true"></i>
+      </Link>}
     </div>
   </div>
 </nav>

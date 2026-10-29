@@ -38,6 +38,10 @@ const createDatabase = require('./cloudflare-test-db.cjs');
       await context.route('**/api.themoviedb.org/3/**', route => {
         const pathname = new URL(route.request().url()).pathname;
         let data = { results: [], genres: [] };
+        if (pathname.endsWith('/search/multi')) data = { results: [
+          { id: 550, title: 'QA movie', media_type: 'movie' },
+          { id: 1399, name: 'QA series', media_type: 'tv' },
+        ] };
         if (/\/movie\/550$/.test(pathname)) data = { id: 550, title: 'QA movie', overview: 'Test film metadata', genres: [], runtime: 90, vote_average: 8 };
         if (/\/tv\/1399$/.test(pathname)) data = { id: 1399, name: 'QA series', overview: 'Test series metadata', genres: [], seasons: [], vote_average: 8 };
         if(pathname.endsWith('/watch/providers')) data={results:showProviders?{US:{flatrate:[{provider_id:8,provider_name:'Netflix'}]}}:{}};
@@ -45,6 +49,31 @@ const createDatabase = require('./cloudflare-test-db.cjs');
       });
       await context.route('https://placehold.co/**',route=>route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="150"></svg>'}));
       const page = await context.newPage(), errors = [], reviewRequests=[];
+      await page.goto(base);
+      if (!await page.getByRole('link', { name: 'Search movies and TV shows', exact: true }).isVisible()) {
+        await page.getByRole('button', { name: 'Toggle navigation' }).click();
+      }
+      await page.getByRole('link', { name: 'Search movies and TV shows', exact: true }).click();
+      await page.getByRole('heading', { name: 'Search', exact: true }).waitFor();
+      assert.equal(new URL(page.url()).pathname, '/search');
+      assert.equal(await page.locator('.home-page').count(), 0);
+      assert.equal(await page.locator('.navbar-search-launcher').count(), 0);
+      if (width < 992) assert.equal(await page.getByRole('button', { name: 'Toggle navigation' }).getAttribute('aria-expanded'), 'false');
+      assert.equal(await page.getByRole('searchbox').count(), 1);
+      assert.equal(await page.getByRole('searchbox', { name: 'Search', exact: true }).evaluate(el => document.activeElement === el), true);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      fs.mkdirSync(path.resolve(__dirname, '../cloudflare/generated'), { recursive: true });
+      await page.screenshot({ path: path.resolve(__dirname, `../cloudflare/generated/search-empty-${width}.png`) });
+      await page.getByRole('searchbox', { name: 'Search', exact: true }).fill('QA');
+      await page.locator('.search-results-grid .movie-row-card').first().waitFor();
+      assert.equal(await page.locator('.search-results-grid .movie-row-card').count(), 2);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await page.screenshot({ path: path.resolve(__dirname, `../cloudflare/generated/search-results-${width}.png`) });
+      if (process.argv.includes('--search-only')) {
+        console.log(`PASS ${width}px Chrome: one search input, dedicated page, results grid, autofocus and no overflow.`);
+        await context.close();
+        continue;
+      }
       page.on('pageerror', error => errors.push(error.message));
       page.on('request',request=>{if(request.url().includes('/api/community/reviews'))reviewRequests.push(request.url());});
       const pass = 'QA-visitor-' + randomBytes(16).toString('hex'), email = 'browser' + width + (width===320?'a'.repeat(140):'') + '@example.invalid';

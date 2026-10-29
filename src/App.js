@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { trackPageView } from './utils/analyticsService';
 
 import './App.css';
@@ -40,11 +40,10 @@ function App() {
       : path === '/search' ? 'search' : path === '/about' ? 'about' : path.startsWith('/tv/') ? 'tv' : path.startsWith('/genre/') ? 'genre' : path === '/' ? 'home' : null;
     if (page_type) trackPageView({ page_type, content_id: detail ? Number(detail[2]) : null, content_type: detail ? detail[1].startsWith('tv') ? 'tv' : 'movie' : null });
   }, [location.key, location.pathname]);
-  const [searchText, setSearchText] = useState('')
 
   return (
    <div>
-  <Navbar searchText={searchText} setSearchText={setSearchText}/>
+  <Navbar/>
   <Routes>
 <Route path='/' Component={Home} />
 <Route path='/about' Component={About} />
@@ -55,7 +54,7 @@ function App() {
 <Route path='/tv/genre/:genreId' Component={TVShows} />
 <Route path='/tv/:id' Component={TVShowDetails} />
 <Route path='/tvtrailers/:id' Component={TVShowTrailers} />
-<Route path='/search' element={<Search keyword={searchText} />} />
+<Route path='/search' element={<Search />} />
 <Route path='/moviedetails/:id' Component={MovieDetails} /> 
 <Route path='/movietrailers/:id' Component={MovieTrailers} />
 {/* Provider Redirect Routes */}

@@ -151,6 +151,7 @@ const createDatabase = require('./cloudflare-test-db.cjs');
         await site.getByRole('heading',{name:'About CineHub',exact:true}).waitFor();
         await aboutRecorded;
         assert.equal(db.sql.prepare("SELECT COUNT(*) n FROM analytics_page_views WHERE page_type='about'").get().n,2);
+        await site.getByRole('link',{name:'Search movies and TV shows',exact:true}).click();
         await site.getByRole('searchbox',{name:'Search',exact:true}).fill('alpha');
         await site.locator('.search-content .movie-row-card').first().waitFor();
         await site.waitForFunction(()=>!document.querySelector('.spinner-border'));

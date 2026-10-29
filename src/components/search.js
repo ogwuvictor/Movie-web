@@ -1,65 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import Hero from './Hero';
+import { useDebounce } from '../hooks/useDebounce';
 import './Search.css';
-import useAutoScroll from '../hooks/useAutoScroll';
 import { trackSearch } from '../utils/analyticsService';
 import { searchMulti } from '../utils/tmdbSearchService';
 
-/**
- * Search Component - Multi-Search Implementation
- * 
- * Uses TMDB v3 /search/multi endpoint for comprehensive search across
- * movies, TV shows, and people in a single API call.
- * 
- * Why /search/multi is superior to separate endpoints:
- * 
- * 1. SINGLE API CALL vs 3 SEPARATE CALLS
- *    - /search/multi: 1 request gets all media types
- *    - Separate: /search/movie + /search/tv + /search/person = 3 requests
- *    - 66% reduction in network requests = faster loading
- * 
- * 2. UNIFIED RANKING
- *    - Results ranked consistently across all media types
- *    - Prevents fragmentation in relevance scoring
- * 
- * 3. RATE LIMIT EFFICIENCY
- *    - TMDB has rate limits (40 requests per 10 seconds for free tier)
- *    - Multi-search uses 1 rate limit slot vs 3
- *    - Better for high-traffic applications
- * 
- * 4. CONSISTENT RESPONSE FORMAT
- *    - Each result has media_type field: "movie" | "tv" | "person"
- *    - No need to merge different response structures
- * 
- * 5. BANDWIDTH OPTIMIZATION
- *    - Single payload with all relevant data
- *    - No duplicate network overhead
- * 
- * @param {object} props - Component props
- * @param {string} props.keyword - Search keyword from URL params
- * @returns {JSX.Element} Search results component with grouped sections
- */
-const Search = ({ keyword: fallbackKeyword }) => {
-  const [params] = useSearchParams();
-  const keyword = params.get('q') ?? fallbackKeyword ?? '';
+const Search = () => {
+  const [params, setParams] = useSearchParams();
+  const keyword = params.get('q') || '';
+  const [inputValue, setInputValue] = useState(keyword);
+  const pendingSearch = useRef(null);
+  const debouncedSearch = useDebounce(inputValue, 500);
+
+  useEffect(() => {
+    pendingSearch.current = null;
+    setInputValue(keyword);
+  }, [keyword]);
+
+  useEffect(() => {
+    if (pendingSearch.current === null || pendingSearch.current !== debouncedSearch) return;
+    pendingSearch.current = null;
+    const query = debouncedSearch.trim();
+    setParams(query ? { q: query } : {}, { replace: true });
+  }, [debouncedSearch, setParams]);
+
+  const submitSearch = event => {
+    event.preventDefault();
+    pendingSearch.current = null;
+    const query = inputValue.trim();
+    setParams(query ? { q: query } : {}, { replace: true });
+  };
+
   const [results, setResults] = useState({ movies: [], tvShows: [], people: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Auto-scroll for movies section
-  const moviesScroll = useAutoScroll({
-    scrollInterval: 4000,
-    scrollAmount: 200,
-    enabled: true
-  });
-
-  // Auto-scroll for TV shows section
-  const tvShowsScroll = useAutoScroll({
-    scrollInterval: 4000,
-    scrollAmount: 200,
-    enabled: true
-  });
 
   // Fetch search results when keyword changes
   useEffect(() => {
@@ -114,16 +88,29 @@ const Search = ({ keyword: fallbackKeyword }) => {
   const totalResults = results.movies.length + results.tvShows.length;
 
   return (
-    <div className="search-page">
-      <Hero title={`Search Results for "${keyword}"`} />
+    <main className="search-page">
+      <header className="search-page-header">
+        <h1>{keyword ? `Search Results for "${keyword}"` : 'Search'}</h1>
+        <p className="search-page-description">Find your next movie or TV series.</p>
+        <form className="search-page-form" role="search" onSubmit={submitSearch}>
+          <label className="visually-hidden" htmlFor="title-search">Search movies and TV shows</label>
+          <input id="title-search" type="search" aria-label="Search" placeholder="Search movies and TV shows..."
+            autoFocus value={inputValue} onChange={event => {
+              pendingSearch.current = event.target.value;
+              setInputValue(event.target.value);
+            }} />
+          <button type="submit" aria-label="Search titles"><i className="fas fa-search" aria-hidden="true"></i></button>
+        </form>
+        {!keyword && <p className="search-page-hint">Enter a title to start exploring.</p>}
+      </header>
 
-      <div className="container search-content py-5">
+      <div className="container search-content">
         {loading && (
           <div className="text-center py-5">
             <div className="spinner-border text-primary" role="status">
               <span className="visually-hidden">Searching...</span>
             </div>
-            <p className="mt-3 text-white">Searching across movies, TV shows, and people...</p>
+            <p className="mt-3 text-white">Searching movies and TV shows...</p>
           </div>
         )}
 
@@ -135,7 +122,7 @@ const Search = ({ keyword: fallbackKeyword }) => {
         )}
 
         {/* Search Results by Category */}
-        {!loading && totalResults === 0 && keyword && (
+        {!loading && !error && totalResults === 0 && keyword && (
           <div className="text-center py-5">
             <i className="fas fa-search fa-3x text-secondary mb-3"></i>
             <h3 className="text-white mb-3">No results found</h3>
@@ -152,20 +139,14 @@ const Search = ({ keyword: fallbackKeyword }) => {
         */}
 
         {/* Section 1: Movies */}
-        {results.movies.length > 0 && (
+        {!loading && !error && results.movies.length > 0 && (
           <div className="movie-row-container mb-5">
             <h3 className="section-title mb-4">
               <i className="fas fa-film me-2"></i>
               Movies ({results.movies.length})
             </h3>
             <div
-              className="movie-row"
-              ref={moviesScroll.scrollContainerRef}
-              onScroll={moviesScroll.handleUserScroll}
-              onMouseEnter={moviesScroll.handleMouseEnter}
-              onMouseLeave={moviesScroll.handleMouseLeave}
-              onTouchStart={moviesScroll.handleTouchStart}
-              onTouchEnd={moviesScroll.handleTouchEnd}
+              className="search-results-grid"
             >
               {results.movies.map((movie) => {
                 if (!movie || !movie.id) return null;
@@ -200,20 +181,14 @@ const Search = ({ keyword: fallbackKeyword }) => {
         )}
 
         {/* Section 2: TV Shows */}
-        {results.tvShows.length > 0 && (
+        {!loading && !error && results.tvShows.length > 0 && (
           <div className="movie-row-container mb-5">
             <h3 className="section-title mb-4">
               <i className="fas fa-tv me-2"></i>
               TV Shows ({results.tvShows.length})
             </h3>
             <div
-              className="movie-row"
-              ref={tvShowsScroll.scrollContainerRef}
-              onScroll={tvShowsScroll.handleUserScroll}
-              onMouseEnter={tvShowsScroll.handleMouseEnter}
-              onMouseLeave={tvShowsScroll.handleMouseLeave}
-              onTouchStart={tvShowsScroll.handleTouchStart}
-              onTouchEnd={tvShowsScroll.handleTouchEnd}
+              className="search-results-grid"
             >
               {results.tvShows.map((show) => {
                 if (!show || !show.id) return null;
@@ -247,7 +222,7 @@ const Search = ({ keyword: fallbackKeyword }) => {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 };
 

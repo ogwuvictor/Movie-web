@@ -27,3 +27,18 @@
   outline: 2px solid currentColor;
   outline-offset: -4px;
 }
+.navbar .navbar-search-launcher {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(100%, 340px);
+  min-height: 44px;
+  padding: .65rem 1rem;
+  border: 1px solid #555;
+  border-radius: 999px;
+  background: #222;
+  color: #bbb;
+  text-decoration: none;
+}
+.navbar-search-launcher:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }

@@ -102,7 +102,19 @@ The Cloudflare dashboard now removes the unconnected Optimization/feature-flag c
 
 `node scripts/verify-user-stats.cjs` verifies unique counts, UTC/window boundaries, missing history, repeatable migrations and access controls. `node scripts/verify-cloudflare.cjs --browser` checks the chart, exact table, responsive admin layouts, outage clearing and recovery with isolated SQLite fixtures. Visitor browser checks cover 320px/390px phones, 844px landscape, 768px tablet and 1440px desktop, including short-height dialogs and long private email addresses. These emulate viewports; they do not certify every physical phone/browser or on-screen keyboard.
 
-## Admin sessions and recovery
+## Live user-report verification
+
+On 2026-10-28, the live `https://cinehub.ogwubenvic18.workers.dev` Worker was checked against its production D1 binding. The visitor and activity tables were missing; both additive migrations were applied. The live health endpoint then returned `configured`. Real Chrome admin login, visitor signup, a second visitor sign-in, authenticated activity deduplication, admin-only report access and mobile/desktop chart/table counts were tested against independent production D1 queries. A browser-intercepted 503 tested UI failure clearing and recovery without taking the production database offline. Temporary verification accounts, sessions and visitor activity were removed afterward. This was a functional test on the current deployment/plan, not a sustained-load or uptime guarantee, and it does not reconstruct pre-migration activity.
+
+For an intentional repeat, first authenticate Wrangler and run:
+
+```powershell
+node scripts/verify-users-live.cjs --allow-test-accounts
+```
+
+This command uses operator Cloudflare credentials internally, creates its own uniquely named temporary admin and visitor accounts, runs actual HTTPS browser tests, compares the live totals against D1, and deletes only those exact fixture identities. It never changes an existing user's password. Admin sign-in audit records are preserved. Credentials and screenshots remain under ignored `cloudflare/generated/`; passwords are not logged. The report is `cloudflare/generated/users-live-report.local.json`. Use `node scripts/verify-users-live.cjs --cleanup-only` after an interrupted process if the ignored fixture file remains. An existing unfinished fixture prevents another test from silently overwriting cleanup information. The browser-test setup is the same local Playwright/Chrome installation used by the other QA scripts. Cloudflare resource limits and blocked/failed/offline requests still apply; monitoring and an appropriate hosting plan are needed for ongoing availability.
+
+## Admin session behavior
 
 - Sign in with either the provisioned username or email, case-insensitively. Unknown accounts and incorrect passwords show the same generic message. There is no public registration or email password-reset service.
 - Login forms use signed, short-lived CSRF tokens; authenticated mutations and logout require a session CSRF token. Cross-origin writes are rejected. Login and password-change requests have separate database-backed rate limits and body-size limits.
