@@ -1,5 +1,6 @@
 import { HttpError, authorize } from './auth.mjs';
 import { json, limit } from './api.mjs';
+import { anonymousStatistics } from './anonymous-activity.mjs';
 
 export async function recordVisitorActivity(db, userId, timestamp = Math.floor(Date.now()/1000)) {
   const day = new Date(timestamp * 1000).toISOString().slice(0,10);
@@ -38,5 +39,6 @@ export async function adminUserStatistics(request,env,db) {
   await authorize(request,env,db);
   if(request.method!=='GET') throw new HttpError(405,'Method not allowed.');
   await limit(db,request,'admin-user-stats',60);
-  return json(await userStatistics(db));
+  const at = new Date();
+  return json({ ...await userStatistics(db, at), anonymous:await anonymousStatistics(db, at) });
 }

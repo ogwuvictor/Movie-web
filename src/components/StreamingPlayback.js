@@ -53,8 +53,9 @@ export default function StreamingPlayback({ selection, title, sampleOnly = false
       {formatTime(stream.providerProgress.currentTime)} / {formatTime(stream.providerProgress.duration)}
     </p>}
     {!sampleOnly && <details className="streaming-help">
-      <summary>Playback &amp; subtitles</summary>
+      <summary>Playback, quality &amp; subtitles</summary>
       <p className="text-secondary">If the video does not play, choose another streaming server above. Availability depends on the provider.</p>
+      <p className="text-secondary">Blurry picture? Open the video&apos;s settings and select 720p or 1080p if offered. Auto quality may improve after buffering. Try another server if the source stays blurry. Low-resolution recordings cannot be made HD by this player; higher quality also needs a faster connection.</p>
       <p className="text-secondary">For subtitle language, use the CC or settings menu inside the video. Subtitles printed into the video cannot be switched off.</p>
     </details>}
     <p className="text-secondary streaming-rotation-hint">For a larger picture on your phone, turn it sideways and use the video&apos;s fullscreen button.</p>

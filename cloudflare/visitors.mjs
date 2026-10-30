@@ -2,6 +2,7 @@ import { HttpError, authConfig, mac, randomToken, cookieValue, setCookie, equal 
 import { hashPassword, verifyPassword } from './passwords.mjs';
 import { body, json, limit, positiveId } from './api.mjs';
 import { recordVisitorActivity } from './user-stats.mjs';
+import { anonymousActivity } from './anonymous-activity.mjs';
 
 const profile = user => ({ id: user.id, username: user.username, email: user.email });
 const now = () => Math.floor(Date.now() / 1000);
@@ -46,7 +47,7 @@ export async function visitors(request,env,db,url) {
   if(route==='reviews' && !COMMUNITY_REVIEWS_ENABLED) throw new HttpError(404,'Community reviews and ratings are currently disabled.');
   if(route==='activity' && method==='GET') {
     try { await identity(request,env,db); return json({authenticated:true}); }
-    catch(error) { if(error.status!==401)throw error; return json({authenticated:false}); }
+    catch(error) { if(error.status!==401)throw error; return anonymousActivity(request,env,db); }
   }
   if(route==='session' && method==='GET') {
     try { const user=await identity(request,env,db); return json({user:profile(user),csrf:user.csrf}); }

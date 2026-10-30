@@ -32,7 +32,8 @@ module.exports = function prepareAdminUsers(dashboard,read) {
     .user-chart-legend { display:flex; flex-wrap:wrap; gap:1rem; list-style:none; padding:0; }
     .user-chart-legend span { display:inline-block; width:.8rem; height:.8rem; margin-right:.35rem; border-radius:50%; }
     .daily-key { background:#0067c0; } .weekly-key { background:#167447; } .monthly-key { background:#7b3fb0; }
-    #userActivityChart { display:block; width:100%; height:auto; min-width:0; margin-bottom:1rem; }
+    .anonymous-metrics { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    #userActivityChart,#anonymousActivityChart { display:block; width:100%; height:auto; min-width:0; margin-bottom:1rem; }
     #usersSection { min-width:0; } #usersStatus,#usersTrackingNote { overflow-wrap:anywhere; }
     @media(max-width:767px) { .user-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem; } .user-metrics .card-body { padding:.85rem; } .user-metrics strong { font-size:1.6rem; } .navbar .container { gap:.5rem; } .navbar-nav { flex-direction:row; flex-wrap:wrap; gap:.5rem; } }
     @media(max-width:359px) { .user-metrics { grid-template-columns:1fr; } }

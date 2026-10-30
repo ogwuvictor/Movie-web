@@ -2,6 +2,7 @@
 (() => {
   let revision=0, cachedHistory=null;
   const ids=['registeredUsers','dailyUsers','weeklyUsers','monthlyUsers'];
+  const anonymousIds=['anonymousDaily','anonymousWeekly','anonymousMonthly'];
   const node=id=>document.getElementById(id);
   const svgNode=(tag,attributes,text)=>{
     const element=document.createElementNS('http://www.w3.org/2000/svg',tag);
@@ -9,8 +10,8 @@
     if(text!==undefined)element.textContent=text;
     return element;
   };
-  function renderChart(history) {
-    const svg=node('userActivityChart'); svg.replaceChildren();
+  function renderChart(history, prefix='user') {
+    const svg=node(prefix+'ActivityChart'); svg.replaceChildren();
     const narrow=svg.getBoundingClientRect().width<500;
     const chartWidth=narrow?400:800, right=chartWidth-20;
     svg.setAttribute('viewBox',`0 0 ${chartWidth} 300`);
@@ -36,24 +37,30 @@
     try {
       const response=await adminFetch('/admin/api/users.php');
       const data=await response.json(); if(current!==revision)return;
-      if(!['total','daily','weekly','monthly'].every(key=>Number.isInteger(data[key]) && data[key]>=0) || !Array.isArray(data.history) || data.history.length!==30) throw Error('Invalid user statistics response');
+      if(!['total','daily','weekly','monthly'].every(key=>Number.isInteger(data[key]) && data[key]>=0) || !Array.isArray(data.history) || data.history.length!==30 ||
+        !data.anonymous || !['daily','weekly','monthly'].every(key=>Number.isInteger(data.anonymous[key]) && data.anonymous[key]>=0) || data.anonymous.history?.length!==30) throw Error('Invalid user statistics response');
       for(const [index,key] of ['total','daily','weekly','monthly'].entries())node(ids[index]).textContent=data[key].toLocaleString();
-      node('usersStatus').textContent='Last refreshed: '+data.generatedAt+' · UTC. Server-recorded account activity.';
+      node('usersStatus').textContent='Last refreshed: '+data.generatedAt+' · UTC. Registered and anonymous activity are measured separately.';
       node('usersTrackingNote').textContent='Tracking started '+data.trackingStartedAt+' UTC. '+(data.partialHistory?'The 7-day and 30-day windows are still accumulating history. Dates before tracking began are not shown as zero.':'Full 30-day tracking history is available.');
-      cachedHistory=data.history;renderChart(data.history);
-      node('userActivityTable').replaceChildren(...data.history.map(row=>{
+      for(const [index,key] of ['daily','weekly','monthly'].entries())node(anonymousIds[index]).textContent=data.anonymous[key].toLocaleString();
+      node('anonymousTrackingNote').textContent='Tracking started '+data.anonymous.trackingStartedAt+' UTC. Earlier visits cannot be reconstructed; 7-day and 30-day windows accumulate from this date.';
+      node('anonymousDefinition').textContent=data.anonymous.definition;
+      cachedHistory=data;renderChart(data.history);renderChart(data.anonymous.history,'anonymous');
+      for(const [prefix,history] of [['user',data.history],['anonymous',data.anonymous.history]])node(prefix+'ActivityTable').replaceChildren(...history.map(row=>{
         const tr=document.createElement('tr');
         for(const value of [row.date,row.daily,row.weekly,row.monthly]) { const td=document.createElement('td');td.textContent=value===null?'—':String(value);tr.append(td); }
         return tr;
       }));
     } catch(error) {
       if(current!==revision)return;
-      for(const id of ids)node(id).textContent='Unavailable';
-      cachedHistory=null;node('userActivityChart').replaceChildren();node('userActivityTable').replaceChildren();node('usersTrackingNote').textContent='';
+      for(const id of [...ids,...anonymousIds])node(id).textContent='Unavailable';
+      cachedHistory=null;
+      for(const prefix of ['user','anonymous']) { node(prefix+'ActivityChart').replaceChildren();node(prefix+'ActivityTable').replaceChildren(); }
+      node('usersTrackingNote').textContent='';node('anonymousTrackingNote').textContent='';node('anonymousDefinition').textContent='';
       node('usersStatus').textContent='Unavailable: '+error.message+'. Previous values have been cleared.';
     }
   }
   document.addEventListener('click',event=>{if(event.target.closest('[data-section="users"],#refreshUsers'))loadUsers();});
-  window.addEventListener('resize',()=>{if(cachedHistory)renderChart(cachedHistory);});
+  window.addEventListener('resize',()=>{if(cachedHistory) { renderChart(cachedHistory.history);renderChart(cachedHistory.anonymous.history,'anonymous'); }});
   setInterval(()=>{if(!document.hidden && !node('usersSection').classList.contains('d-none'))loadUsers();},60000);
 })();

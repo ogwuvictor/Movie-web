@@ -1,6 +1,7 @@
 <section id="usersSection" class="d-none" aria-labelledby="usersHeading">
   <div class="admin-users-header"><h1 id="usersHeading" class="h4">Users &amp; activity</h1><button type="button" class="btn btn-outline-primary" id="refreshUsers">Refresh</button></div>
   <p id="usersStatus" class="small text-muted" role="status">Not refreshed yet.</p>
+  <h2 class="h5">Registered accounts</h2>
   <div class="user-metrics">
     <div class="card"><div class="card-body"><h2 class="h6">Registered users</h2><strong id="registeredUsers">—</strong></div></div>
     <div class="card"><div class="card-body"><h2 class="h6">Daily active</h2><strong id="dailyUsers">—</strong><small>Today (UTC)</small></div></div>
@@ -14,5 +15,20 @@
     <ul class="user-chart-legend"><li><span class="daily-key"></span>Daily</li><li><span class="weekly-key"></span>7-day active</li><li><span class="monthly-key"></span>30-day active</li></ul>
     <svg id="userActivityChart" viewBox="0 0 800 300" role="img" aria-label="User activity chart. Exact values are available in the table below."></svg>
     <details><summary>View exact daily values</summary><div class="table-responsive"><table class="table table-sm"><caption>Distinct active accounts by UTC date. A dash means activity tracking was not running yet.</caption><thead><tr><th scope="col">Date (UTC)</th><th scope="col">Daily</th><th scope="col">7-day</th><th scope="col">30-day</th></tr></thead><tbody id="userActivityTable"></tbody></table></div></details>
+  </div></div>
+  <h2 class="h5 mt-4">Anonymous visitors</h2>
+  <p>Signed-out browser activity, measured separately from registered accounts.</p>
+  <div class="user-metrics anonymous-metrics">
+    <div class="card"><div class="card-body"><h3 class="h6">Daily browsers</h3><strong id="anonymousDaily">—</strong><small>Today (UTC)</small></div></div>
+    <div class="card"><div class="card-body"><h3 class="h6">Weekly browsers</h3><strong id="anonymousWeekly">—</strong><small>Last 7 calendar days</small></div></div>
+    <div class="card"><div class="card-body"><h3 class="h6">Monthly browsers</h3><strong id="anonymousMonthly">—</strong><small>Last 30 calendar days</small></div></div>
+  </div>
+  <div class="card my-4"><div class="card-body">
+    <h3 class="h5">Anonymous activity over the last 30 days</h3>
+    <p id="anonymousDefinition"></p>
+    <p id="anonymousTrackingNote" class="small text-muted"></p>
+    <ul class="user-chart-legend"><li><span class="daily-key"></span>Daily</li><li><span class="weekly-key"></span>7-day active</li><li><span class="monthly-key"></span>30-day active</li></ul>
+    <svg id="anonymousActivityChart" viewBox="0 0 800 300" role="img" aria-label="Anonymous browser activity chart. Exact values are available in the table below."></svg>
+    <details><summary>View exact anonymous daily values</summary><div class="table-responsive"><table class="table table-sm"><caption>Distinct signed-out browsers by UTC date. A dash means tracking was not running yet.</caption><thead><tr><th scope="col">Date (UTC)</th><th scope="col">Daily</th><th scope="col">7-day</th><th scope="col">30-day</th></tr></thead><tbody id="anonymousActivityTable"></tbody></table></div></details>
   </div></div>
 </section>

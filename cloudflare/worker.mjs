@@ -39,7 +39,7 @@ export default {
       if(url.pathname.startsWith('/api/community/')) return secure(await visitors(request,env,db,url),null,url);
       if(url.pathname==='/api/health'&&request.method==='GET') {
         authConfig(env);
-        const required=['public_domain_movies','analytics_page_views','analytics_provider_clicks','analytics_search','analytics_engagement','performance_api_metrics','performance_system_metrics','optimization_ab_tests','optimization_feature_flags','optimization_cache_metrics','streaming_catalog','request_limits','admin_audit','admin_users','admin_sessions','visitors','visitor_sessions','visitor_library','visitor_reviews','visitor_daily_activity','visitor_activity_settings'];
+        const required=['public_domain_movies','analytics_page_views','analytics_provider_clicks','analytics_search','analytics_engagement','performance_api_metrics','performance_system_metrics','optimization_ab_tests','optimization_feature_flags','optimization_cache_metrics','streaming_catalog','request_limits','admin_audit','admin_users','admin_sessions','visitors','visitor_sessions','visitor_library','visitor_reviews','visitor_daily_activity','visitor_activity_settings','anonymous_daily_activity','anonymous_activity_settings'];
         const schema=await db.prepare(`SELECT COUNT(*) count FROM sqlite_master WHERE type='table' AND name IN (${required.map(()=>'?').join(',')})`).bind(...required).first();
         if(schema.count!==required.length)throw new HttpError(503,'The D1 schema is incomplete.');
         if (!(await db.prepare('SELECT COUNT(*) count FROM admin_users WHERE disabled=0').first()).count) throw new HttpError(503,'Create the admin account before signing in.');

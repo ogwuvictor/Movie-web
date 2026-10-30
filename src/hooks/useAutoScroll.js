@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 /**
  * Custom hook for auto-scrolling horizontal movie rows
@@ -19,6 +19,12 @@ const useAutoScroll = ({
   const intervalRef = useRef(null);
   const isUserScrolling = useRef(false);
   const userScrollTimeoutRef = useRef(null);
+  const touchTimeoutRef = useRef(null);
+  const rowId = useId();
+  // Stable per-row timing: spread the first movements and subsequent cadence.
+  const seed = Array.from(rowId).reduce((value, char) => Math.imul(value ^ char.charCodeAt(0), 16777619) >>> 0, 2166136261);
+  const phase = seed % 3100;
+  const cadence = scrollInterval + ((seed >>> 8) % 1900);
 
   useEffect(() => {
     if (!enabled) return;
@@ -29,9 +35,11 @@ const useAutoScroll = ({
     const scroll = () => {
       // On phones, leave browsing under the visitor's touch control.
       if (window.matchMedia('(max-width: 575.98px)').matches) return;
+      if (document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       if (isPaused || isUserScrolling.current) return;
 
       const maxScrollLeft = container.scrollWidth - container.clientWidth;
+      if (maxScrollLeft <= 0) return;
       const currentScrollLeft = container.scrollLeft;
 
       // If we've reached the end, reset to start
@@ -51,18 +59,24 @@ const useAutoScroll = ({
     };
 
     // Start auto-scroll interval
-    intervalRef.current = setInterval(scroll, scrollInterval);
+    const firstScroll = setTimeout(() => {
+      scroll();
+      intervalRef.current = setInterval(scroll, cadence);
+    }, scrollInterval + phase);
 
     // Cleanup on unmount
     return () => {
+      clearTimeout(firstScroll);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
-      if (userScrollTimeoutRef.current) {
-        clearTimeout(userScrollTimeoutRef.current);
-      }
     };
-  }, [scrollInterval, scrollAmount, enabled, isPaused]);
+  }, [scrollInterval, scrollAmount, enabled, isPaused, phase, cadence]);
+
+  useEffect(() => () => {
+    clearTimeout(touchTimeoutRef.current);
+    clearTimeout(userScrollTimeoutRef.current);
+  }, []);
 
   // Handle user manual scroll
   const handleUserScroll = () => {
@@ -91,12 +105,13 @@ const useAutoScroll = ({
 
   // Handle touch start (pause for mobile)
   const handleTouchStart = () => {
+    clearTimeout(touchTimeoutRef.current);
     setIsPaused(true);
   };
 
   // Handle touch end (resume after delay)
   const handleTouchEnd = () => {
-    setTimeout(() => {
+    touchTimeoutRef.current = setTimeout(() => {
       setIsPaused(false);
     }, 2000);
   };
