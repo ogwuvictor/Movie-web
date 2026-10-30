@@ -112,6 +112,19 @@ const createDatabase = require('./cloudflare-test-db.cjs');
       await page.getByRole('link', { name: 'My profile', exact: true }).waitFor();
       await page.goto(base+'/profile');
       await page.getByRole('heading',{name:'Your next watch starts here',exact:true}).waitFor();
+      if(width===390) {
+        const visitorCookie=(await context.cookies()).find(cookie=>cookie.name==='cinehub_visitor');
+        assert(visitorCookie?.httpOnly && visitorCookie.expires-Date.now()/1000>29*86400,'Visitor cookie must persist for approximately 30 days');
+        db.sql.prepare("UPDATE visitor_sessions SET last_seen=unixepoch()-7200 WHERE user_id=(SELECT id FROM visitors WHERE username=?)").run('browser'+width);
+        await page.reload();
+        await page.getByRole('heading',{name:'Your next watch starts here',exact:true}).waitFor();
+        // Browser restart simulation: reuse the browser's stored persistent cookies.
+        const returning=await browser.newContext({viewport,storageState:await context.storageState()});
+        const returnPage=await returning.newPage();await returnPage.goto(base+'/profile');
+        await returnPage.getByRole('heading',{name:'Your next watch starts here',exact:true}).waitFor();
+        await returning.close();
+        console.log('PASS visitor session survives two hours without requests, profile reload and restored browser cookies.');
+      }
       assert.equal(await page.getByRole('button',{name:'Next',exact:true}).count(),0,'Empty library must not show useless pagination');
       await page.screenshot({path:path.join(root,'../cloudflare/generated/visitor-empty-'+width+'.png'),fullPage:true});
       await page.goto(base+'/moviedetails/550');

@@ -12,14 +12,19 @@ const text = (value, max, allowEmpty = false) => {
 };
 const media = value => { if (!['movie','tv'].includes(value)) throw new HttpError(422,'Invalid media type.'); return value; };
 export const COMMUNITY_REVIEWS_ENABLED = false;
+// Viewer sessions must survive a film, backgrounded phone or return visit.
+// These limits are separate from the short-lived administrative sessions.
+export const VISITOR_SESSION_IDLE_SECONDS = 7 * 86400;
+export const VISITOR_SESSION_MAX_SECONDS = 30 * 86400;
 async function identity(request, env, db) {
   const token = cookieValue(request, 'visitor');
   if (!/^[a-f0-9]{64}$/.test(token)) throw new HttpError(401,'Sign in to continue.');
   const digest = await mac(env,'visitor-session:'+token);
+  const timestamp = now();
   const user = await db.prepare(`SELECT v.id,v.username,v.email,s.last_seen FROM visitors v JOIN visitor_sessions s ON v.id=s.user_id
-    WHERE s.token_hash=? AND s.expires_at>? AND s.last_seen>?`).bind(digest,now(),now()-1800).first();
+    WHERE s.token_hash=? AND s.expires_at>? AND s.last_seen>?`).bind(digest,timestamp,timestamp-VISITOR_SESSION_IDLE_SECONDS).first();
   if (!user) throw new HttpError(401,'Your session expired. Sign in again.');
-  if (user.last_seen < now()-60) await db.prepare('UPDATE visitor_sessions SET last_seen=? WHERE token_hash=?').bind(now(),digest).run();
+  if (user.last_seen < timestamp-60) await db.prepare('UPDATE visitor_sessions SET last_seen=MAX(last_seen,?) WHERE token_hash=?').bind(timestamp,digest).run();
   await recordVisitorActivity(db,user.id);
   return { ...user, digest, csrf: await mac(env,'visitor-csrf:'+token) };
 }
@@ -78,13 +83,13 @@ export async function visitors(request,env,db,url) {
     const token=randomToken(), digest=await mac(env,'visitor-session:'+token);
     const old=await mac(env,'visitor-session:'+cookieValue(request,'visitor'));
     await db.batch([
-      db.prepare('DELETE FROM visitor_sessions WHERE token_hash=? OR expires_at<=? OR last_seen<=?').bind(old,now(),now()-1800),
-      db.prepare('INSERT INTO visitor_sessions(token_hash,user_id,last_seen,expires_at) VALUES (?,?,?,?)').bind(digest,user.id,now(),now()+28800),
+      db.prepare('DELETE FROM visitor_sessions WHERE token_hash=? OR expires_at<=? OR last_seen<=?').bind(old,now(),now()-VISITOR_SESSION_IDLE_SECONDS),
+      db.prepare('INSERT INTO visitor_sessions(token_hash,user_id,last_seen,expires_at) VALUES (?,?,?,?)').bind(digest,user.id,now(),now()+VISITOR_SESSION_MAX_SECONDS),
       db.prepare('DELETE FROM visitor_sessions WHERE user_id=? AND token_hash NOT IN (SELECT token_hash FROM visitor_sessions WHERE user_id=? ORDER BY rowid DESC LIMIT 5)').bind(user.id,user.id),
     ]);
     await recordVisitorActivity(db,user.id);
     const response=json({user:profile(user),csrf:await mac(env,'visitor-csrf:'+token)});
-    response.headers.set('Set-Cookie',setCookie(request,token,28800,'visitor'));
+    response.headers.set('Set-Cookie',setCookie(request,token,VISITOR_SESSION_MAX_SECONDS,'visitor'));
     return response;
   }
   if(route==='reviews' && method==='GET') {
