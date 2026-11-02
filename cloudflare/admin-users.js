@@ -31,11 +31,11 @@
       }
     }
   }
-  async function loadUsers() {
+  async function loadUsers(passive=false) {
     const current=++revision;
     node('usersStatus').textContent='Refreshing user counts...';
     try {
-      const response=await adminFetch('/admin/api/users.php');
+      const response=await adminFetch('/admin/api/users.php',{headers:passive?{'X-Admin-Passive':'1'}:{}});
       const data=await response.json(); if(current!==revision)return;
       if(!['total','daily','weekly','monthly'].every(key=>Number.isInteger(data[key]) && data[key]>=0) || !Array.isArray(data.history) || data.history.length!==30 ||
         !data.anonymous || !['daily','weekly','monthly'].every(key=>Number.isInteger(data.anonymous[key]) && data.anonymous[key]>=0) || data.anonymous.history?.length!==30) throw Error('Invalid user statistics response');
@@ -62,5 +62,5 @@
   }
   document.addEventListener('click',event=>{if(event.target.closest('[data-section="users"],#refreshUsers'))loadUsers();});
   window.addEventListener('resize',()=>{if(cachedHistory) { renderChart(cachedHistory.history);renderChart(cachedHistory.anonymous.history,'anonymous'); }});
-  setInterval(()=>{if(!document.hidden && !node('usersSection').classList.contains('d-none'))loadUsers();},60000);
+  setInterval(()=>{if(!document.hidden && !node('usersSection').classList.contains('d-none'))loadUsers(true);},60000);
 })();

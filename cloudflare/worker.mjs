@@ -1,5 +1,5 @@
 import { dashboard, streaming, streamingScript, usersScript } from './generated/admin.mjs';
-import { HttpError, authConfig, authorize, checkCsrf, setCookie } from './auth.mjs';
+import { HttpError, authConfig, authorize, checkCsrf, setCookie, refreshAdminSessionCookie } from './auth.mjs';
 import { api, json, limit, httpUrl } from './api.mjs';
 import { signIn, signOut, changePassword } from './login.mjs';
 import { visitors } from './visitors.mjs';
@@ -20,7 +20,7 @@ function secure(response, nonce, url) {
   headers.set('Content-Security-Policy',nonce ? `default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'nonce-${nonce}'; style-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; font-src 'self' https://cdnjs.cloudflare.com data:; img-src 'self' https: data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'` : "default-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
   return new Response(response.body,{status:response.status,headers});
 }
-export default {
+const worker = {
   async fetch(request,env) {
     const url=new URL(request.url); let nonce;
     try {
@@ -84,4 +84,9 @@ export default {
       return secure(json({error:error instanceof HttpError?error.message:status===409?'A record with this identifier already exists.':'Service unavailable. Try again later.'},status),nonce,url);
     }
   }
+};
+export default {
+  async fetch(request, env) {
+    return refreshAdminSessionCookie(request, await worker.fetch(request, env));
+  },
 };

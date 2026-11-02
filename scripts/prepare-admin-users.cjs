@@ -13,6 +13,14 @@ module.exports = function prepareAdminUsers(dashboard,read) {
   replace(/\s*\/\/ Load optimization data[\s\S]*?(?=\s*\/\/ Show add modal)/,'\n');
   replace(/\s*else if \(button.dataset.feature\)[^\n]+/,'');
   dashboard=dashboard.replaceAll(', [data-feature]','').replace('analytics: 0, performance: 0, optimization: 0','analytics: 0, performance: 0');
+  // Automatic refreshes can read reports but must not keep an idle admin signed in.
+  for(const name of ['Analytics','Performance']) {
+    replace(new RegExp('function load'+name+'Data\\(\\) \\{'),'function load'+name+'Data(passive = false) {');
+    const section=name.toLowerCase();
+    replace(new RegExp("if \\(visibleSection === '"+section+"'\\) load"+name+"Data\\(\\);"),"if (visibleSection === '"+section+"') load"+name+"Data(true);");
+  }
+  replace(/adminFetch\('\/admin\/api\/analytics.php\?dashboard=true'\)/,"adminFetch('/admin/api/analytics.php?dashboard=true', { headers: passive ? { 'X-Admin-Passive': '1' } : {} })");
+  replace(/adminFetch\('\/admin\/api\/performance.php\?type=dashboard'\)/,"adminFetch('/admin/api/performance.php?type=dashboard', { headers: passive ? { 'X-Admin-Passive': '1' } : {} })");
   dashboard=dashboard.replaceAll(",'totalEngagement'",'').replaceAll(",'cacheMetricsTable'",'');
   dashboard=dashboard.replace("(section === 'performance' ? ['apiMetricsTable'] : ['featureFlagsTable'])","['apiMetricsTable']");
   replace(/\s*document.getElementById\('totalEngagement'\)[^\n]+/,'');

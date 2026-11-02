@@ -1,5 +1,5 @@
 import { login } from './generated/admin.mjs';
-import { HttpError, authConfig, authorize, cookieValue, setCookie, randomToken, mac, loginToken, verifyLoginToken, checkCsrf } from './auth.mjs';
+import { HttpError, authConfig, authorize, cookieValue, setCookie, randomToken, mac, loginToken, verifyLoginToken, checkCsrf, ADMIN_SESSION_IDLE_SECONDS } from './auth.mjs';
 import { hashPassword, verifyPassword, validatePassword } from './passwords.mjs';
 import { body, json, limit } from './api.mjs';
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
@@ -56,13 +56,13 @@ export async function signIn(request, env, db, nonce) {
   const previousHash = await mac(env, 'session:' + previous);
   const result = await db.batch([
     db.prepare(`INSERT INTO admin_sessions(token_hash,user_id,password_version,created_at,last_seen,expires_at)
-      SELECT ?,id,password_version,?,?,? FROM admin_users WHERE id=? AND password_version=? AND disabled=0`).bind(tokenHash, now, now, now + 28800, user.id, user.password_version),
+      SELECT ?,id,password_version,?,?,? FROM admin_users WHERE id=? AND password_version=? AND disabled=0`).bind(tokenHash, now, now, now + ADMIN_SESSION_IDLE_SECONDS, user.id, user.password_version),
     db.prepare("INSERT INTO admin_audit(actor,action,entity) SELECT ?,'auth.login',? WHERE changes()>0").bind(user.email, String(user.id)),
     db.prepare('DELETE FROM admin_sessions WHERE token_hash=? OR expires_at<=?').bind(previousHash, now),
     db.prepare('DELETE FROM admin_sessions WHERE user_id=? AND token_hash NOT IN (SELECT token_hash FROM admin_sessions WHERE user_id=? ORDER BY created_at DESC,rowid DESC LIMIT 5)').bind(user.id, user.id),
   ]);
   if (!result[0].meta.changes) return renderLogin(form.get('csrf_token'), nonce, failed, 401);
-  return redirect('/admin/', setCookie(request, token, 28800));
+  return redirect('/admin/', setCookie(request, token, ADMIN_SESSION_IDLE_SECONDS));
 }
 export async function signOut(request, env, db) {
   if (request.method !== 'POST') throw new HttpError(405, 'Method not allowed.');

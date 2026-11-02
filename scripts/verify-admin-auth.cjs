@@ -5,7 +5,7 @@ const createDatabase = require('./cloudflare-test-db.cjs');
 (async () => {
   const db = createDatabase();
   const { default: worker } = await import('../cloudflare/worker.mjs');
-  const { mac } = await import('../cloudflare/auth.mjs');
+  const { mac, ADMIN_SESSION_IDLE_SECONDS } = await import('../cloudflare/auth.mjs');
   const { accountSql } = await import('./create-admin.mjs');
   const { hashPassword } = await import('../cloudflare/passwords.mjs');
   const password = 'Temporary-QA-' + randomBytes(18).toString('hex');
@@ -69,9 +69,22 @@ const createDatabase = require('./cloudflare-test-db.cjs');
     assert.equal((await call('/admin/api/movies.php', { ...post, headers: { ...post.headers, 'X-CSRF-Token': '\u00e9'.repeat(64) } })).status, 403);
     const tokenHash = await mac(env, 'session:' + raw);
     const now = Math.floor(Date.now() / 1000);
+    assert(signed.headers.get('Set-Cookie').includes('Max-Age='+ADMIN_SESSION_IDLE_SECONDS));
+    const expiry=db.sql.prepare('SELECT expires_at FROM admin_sessions WHERE token_hash=?').get(tokenHash).expires_at;
+    assert(Math.abs(expiry-now-ADMIN_SESSION_IDLE_SECONDS)<10);
+    db.sql.prepare('UPDATE admin_sessions SET last_seen=?,expires_at=?,created_at=? WHERE token_hash=?').run(now-23*3600,now+3600,now-2*86400,tokenHash);
+    const passive=await call('/admin/api/analytics.php?dashboard=true',{headers:{...headers,'X-Admin-Passive':'1'}});
+    assert.equal(passive.status,200);assert.equal(passive.headers.get('Set-Cookie'),null);
+    let row=db.sql.prepare('SELECT last_seen,expires_at FROM admin_sessions WHERE token_hash=?').get(tokenHash);
+    assert.equal(row.last_seen,now-23*3600);assert.equal(row.expires_at,now+3600,'Automatic polling must not renew inactivity');
+    const resumed=await call('/admin/',{headers});
+    assert.equal(resumed.status,200,'A return within 24 hours must stay signed in even if the original login is older');
+    assert(resumed.headers.get('Set-Cookie').includes('Max-Age='+ADMIN_SESSION_IDLE_SECONDS));
+    row=db.sql.prepare('SELECT last_seen,expires_at FROM admin_sessions WHERE token_hash=?').get(tokenHash);
+    assert(row.last_seen>=now);assert(row.expires_at>=now+ADMIN_SESSION_IDLE_SECONDS,'Real use must restart the 24-hour server and cookie clocks');
     for (const [sql, restore] of [
-      ['UPDATE admin_sessions SET expires_at=1', `UPDATE admin_sessions SET expires_at=${now + 28800}`],
-      [`UPDATE admin_sessions SET last_seen=${now - 1801}`, `UPDATE admin_sessions SET last_seen=${now}`],
+      ['UPDATE admin_sessions SET expires_at=1', `UPDATE admin_sessions SET expires_at=${now + ADMIN_SESSION_IDLE_SECONDS}`],
+      [`UPDATE admin_sessions SET last_seen=${now - ADMIN_SESSION_IDLE_SECONDS - 1}`, `UPDATE admin_sessions SET last_seen=${now}`],
       ['UPDATE admin_users SET disabled=1', 'UPDATE admin_users SET disabled=0'],
     ]) {
       db.sql.exec(sql); assert.equal((await call('/admin/api/analytics.php?dashboard=true', { headers })).status, 401); db.sql.exec(restore);
@@ -102,7 +115,7 @@ const createDatabase = require('./cloudflare-test-db.cjs');
     assert.equal(db.sql.prepare('SELECT COUNT(*) n FROM admin_sessions WHERE token_hash=?').get(tokenHash).n, 0);
     db.sql.exec(require('fs').readFileSync(require('path').join(__dirname, '../cloudflare/migrations/20261026_admin_login.sql'), 'utf8'));
     assert.equal(db.sql.prepare('SELECT COUNT(*) n FROM admin_users').get().n, 1);
-    console.log('PASS password hashing, no signup/default account, generic errors, CSRF/origin/body limits, secure cookies, session rotation, idle/absolute expiry, disabled/revoked sessions, logout, password change, CLI recovery, login throttling and additive migration. Isolated SQLite only.');
+    console.log('PASS password hashing, no signup/default account, generic errors, CSRF/origin/body limits, secure cookies, rolling 24-hour expiry, passive polling exclusion, disabled/revoked sessions, logout, password change, CLI recovery, login throttling and additive migration. Isolated SQLite only.');
     if (process.argv.includes('--browser')) {
       const { chromium } = require(require('path').join(require('os').tmpdir(), 'moviesync-browser-tools/node_modules/playwright'));
       const server = require('http').createServer(async (req, res) => {

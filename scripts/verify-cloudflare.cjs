@@ -87,13 +87,36 @@ const createDatabase = require('./cloudflare-test-db.cjs');
       });
       await new Promise(resolve=>server.listen(8788,'127.0.0.1',resolve));
       try {
-        const context=await browser.newContext();await context.addCookies([{name:'cinehub_session',value:token,url:'http://127.0.0.1:8788',httpOnly:true,sameSite:'Strict'}]);
+        const context=await browser.newContext();
         const page=await context.newPage();const errors=[];page.on('pageerror',error=>errors.push(error.message));
-        await page.goto('http://127.0.0.1:8788/admin/');
+        await page.goto('http://127.0.0.1:8788/admin/login.php');
+        await page.getByLabel('Username or email',{exact:true}).fill('qa-admin');
+        await page.getByLabel('Password',{exact:true}).fill(password);
+        await page.locator('form button[type="submit"]').click();
+        await page.waitForURL('http://127.0.0.1:8788/admin/');
+        const persistent=(await context.cookies()).find(cookie=>cookie.name==='cinehub_session');
+        assert(persistent?.httpOnly && persistent.expires-Date.now()/1000>23*3600,'Admin sign-in must issue a persistent 24-hour cookie');
+        const browserDigest=await mac(env,'session:'+persistent.value);
+        db.sql.prepare('UPDATE admin_sessions SET last_seen=unixepoch()-82800,expires_at=unixepoch()+3600,created_at=unixepoch()-172800 WHERE token_hash=?').run(browserDigest);
+        await page.reload();await page.locator('[data-section="users"]').waitFor();
+        assert(db.sql.prepare('SELECT expires_at-unixepoch() AS remaining FROM admin_sessions WHERE token_hash=?').get(browserDigest).remaining>86300,'A return within 24 hours must renew server expiry');
+        const restored=await browser.newContext({storageState:await context.storageState()});
+        assert.equal((await restored.request.get('http://127.0.0.1:8788/admin/api/users.php')).status(),200);
+        await restored.close();
+        console.log('PASS real browser admin login, 23-hour inactivity, rolling expiry, reload and restored persistent cookie.');
         await page.locator('[data-section="analytics"]').click();
         await page.waitForFunction(()=>document.getElementById('totalPageViews').textContent==='3');
         assert.equal(await page.locator('#totalProviderClicks').textContent(),'1');assert.equal(await page.locator('#totalSearches').textContent(),'1');
         await page.locator('#analyticsStatus').filter({hasText:'Last refreshed:'}).waitFor();
+        for(const method of ['loadAnalyticsData','loadPerformanceData']) {
+          db.sql.prepare('UPDATE admin_sessions SET last_seen=unixepoch()-82800,expires_at=unixepoch()+3600 WHERE token_hash=?').run(browserDigest);
+          const before=db.sql.prepare('SELECT last_seen,expires_at FROM admin_sessions WHERE token_hash=?').get(browserDigest);
+          await Promise.all([
+            page.waitForResponse(response=>response.url().includes('/admin/api/')&&response.request().headers()['x-admin-passive']==='1'),
+            page.evaluate(name=>window[name](true),method),
+          ]);
+          assert.deepEqual(db.sql.prepare('SELECT last_seen,expires_at FROM admin_sessions WHERE token_hash=?').get(browserDigest),before,'Automatic reports must not reset inactivity');
+        }
         await page.route('**/admin/api/analytics.php?dashboard=true',route=>route.fulfill({status:503,json:{error:'Temporary database outage'}}));
         await page.locator('[data-section="analytics"]').click();await page.locator('#totalPageViews').filter({hasText:'Unavailable'}).waitFor();
         assert.equal(await page.locator('#totalSearches').textContent(),'Unavailable');
