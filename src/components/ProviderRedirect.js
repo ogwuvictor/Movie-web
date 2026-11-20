@@ -56,9 +56,6 @@ const ProviderRedirect = () => {
       userAgent: navigator.userAgent,
     };
 
-    // Log to console for now (replace with actual analytics in production)
-    console.log('Provider Click Tracked:', clickData);
-
     // TODO: Send to analytics backend
     // Example: fetch('/api/analytics/click', {
     //   method: 'POST',

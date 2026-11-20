@@ -1,3 +1,4 @@
+import { TMDB_API_BASE, TMDB_API_KEY, TMDB_IMAGE_BASE } from './tmdbConfig';
 import { trackApiPerformance } from './analyticsService';
 /**
  * TMDB Search Service
@@ -19,9 +20,9 @@ import { trackApiPerformance } from './analyticsService';
 
 // TMDB API Configuration
 const TMDB_CONFIG = {
-  BASE_URL: 'https://api.themoviedb.org/3',
-  API_KEY: '8f666adc99ee1f6168974514ff6d951a',
-  IMAGES_BASE_URL: 'https://image.tmdb.org/t/p',
+  BASE_URL: TMDB_API_BASE,
+  API_KEY: TMDB_API_KEY,
+  IMAGES_BASE_URL: TMDB_IMAGE_BASE,
   POSTER_SIZE: 'w780',
   PROFILE_SIZE: 'w185',
   BACKDROP_SIZE: 'original'
@@ -78,9 +79,6 @@ export async function searchMulti(query, options = {}) {
 
     const url = `${TMDB_CONFIG.BASE_URL}/search/multi?${params.toString()}`;
 
-    console.log('🔍 TMDB Multi-Search:', query);
-    console.log('📡 API URL:', url);
-
     const startedAt = performance.now();
     const response = await fetch(url, {
       method: 'GET',
@@ -96,7 +94,6 @@ export async function searchMulti(query, options = {}) {
     }
 
     const data = await response.json();
-    console.log('✅ Search Results:', data.total_results, 'items');
 
     // Group and rank results
     const groupedResults = groupAndRankResults(data.results || [], query.trim());

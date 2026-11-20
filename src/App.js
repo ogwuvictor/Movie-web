@@ -1,30 +1,37 @@
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { trackPageView } from './utils/analyticsService';
 
 import './App.css';
-import Home from './components/Home';
-import Account from './components/Account';
-import { Signup } from './components/VisitorLogin';
 import Navbar from './components/Navbar'
-// import Hero from './components/Hero'
 import About from './components/About'
-import GenreMovies from './components/GenreMoviesFinal';
-import TVShows from './components/TVShows';
-import TVShowDetails from './components/TVShowDetails';
-import TVShowTrailers from './components/TVShowTrailers';
 import {
   useLocation,
   Routes,
   Route,
 } from 'react-router-dom'
-import Search from './components/search';
-import MovieDetails from './components/Moviedetails';
-import MovieTrailers from './components/Trailers';
 import ProviderRedirect from './components/ProviderRedirect';
 import './Mobile.css';
 import useRouteScrollRestoration from './hooks/useRouteScrollRestoration';
 import useVisitorActivity from './hooks/useVisitorActivity';
 
+const Home = lazy(() => import('./components/Home'));
+const Account = lazy(() => import('./components/Account'));
+const Signup = lazy(() => import('./components/VisitorLogin').then(m => ({ default: m.Signup })));
+const GenreMovies = lazy(() => import('./components/GenreMoviesFinal'));
+const TVShows = lazy(() => import('./components/TVShows'));
+const TVShowDetails = lazy(() => import('./components/TVShowDetails'));
+const TVShowTrailers = lazy(() => import('./components/TVShowTrailers'));
+const Search = lazy(() => import('./components/search'));
+const MovieDetails = lazy(() => import('./components/Moviedetails'));
+const MovieTrailers = lazy(() => import('./components/Trailers'));
+
+const PageFallback = () => (
+  <div className="container py-5 text-center">
+    <div className="spinner-border text-primary" role="status">
+      <span className="visually-hidden">Loading...</span>
+    </div>
+  </div>
+);
 
 function App() {
   useRouteScrollRestoration();
@@ -44,6 +51,7 @@ function App() {
   return (
    <div>
   <Navbar/>
+  <Suspense fallback={<PageFallback />}>
   <Routes>
 <Route path='/' Component={Home} />
 <Route path='/about' Component={About} />
@@ -59,9 +67,8 @@ function App() {
 <Route path='/movietrailers/:id' Component={MovieTrailers} />
 {/* Provider Redirect Routes */}
 <Route path='/out/:provider' Component={ProviderRedirect} />
-{/* <Route path="/movietrailers/:movie_id" component={MovieTrailers} /> */}
   </Routes>
-   
+  </Suspense>
    </div>
   );
 }

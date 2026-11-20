@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import './GenreSelector.css';
+import { tmdbUrl } from '../utils/tmdbConfig';
 
 const GenreSelector = () => {
   const [genres, setGenres] = useState([]);
@@ -11,7 +12,7 @@ const GenreSelector = () => {
     const controller = new AbortController();
     const fetchGenres = async () => {
       try {
-        const apiUrl = 'https://api.themoviedb.org/3/genre/movie/list?language=en&api_key=8f666adc99ee1f6168974514ff6d951a';
+        const apiUrl = tmdbUrl('genre/movie/list', { language: 'en' });
         const response = await fetch(apiUrl, { signal: controller.signal });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();

@@ -51,7 +51,7 @@ CineHub is a full-stack movie discovery platform featuring:
 
 ### Frontend
 - **React 18.2.0**: UI framework
-- **React Router DOM 6.16.0**: Client-side routing
+- **React Router DOM 7**: Client-side routing
 - **React YouTube 10.1.0**: YouTube trailer integration
 - **React Text Truncate 0.19.0**: Text truncation for UI
 - **Create React App 5.0.1**: Build tooling
@@ -203,14 +203,14 @@ Optional PHP backend provides:
 
 ## Environment Variables
 
-No environment variables are required for basic functionality. The TMDB API key is currently hardcoded in components. For production:
+TMDB credentials are centralized in `src/utils/tmdbConfig.js`. To override them, create a `.env.local` file in the root directory:
 
-1. Create a `.env` file in the root directory
-2. Add your TMDB API key:
 ```
 REACT_APP_TMDB_API_KEY=your_api_key_here
+REACT_APP_TMDB_READ_TOKEN=your_read_token_here
 ```
-3. Update components to use `process.env.REACT_APP_TMDB_API_KEY`
+
+Components should import `tmdbUrl`, `tmdbPoster`, `tmdbTitle`, and `tmdbDetailPath` from `src/utils/tmdbConfig.js` instead of hardcoding TMDB URLs.
 
 ## Deployment
 

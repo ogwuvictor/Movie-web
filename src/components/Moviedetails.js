@@ -8,6 +8,7 @@ import { processProviders, generateRedirectUrl } from '../utils/providerLinkServ
 import StreamingModal from './StreamingModal';
 import TitleCommunity from './TitleCommunity';
 import { validateSelection } from '../streaming/streamingServers';
+import { tmdbUrl, tmdbPoster } from '../utils/tmdbConfig';
 
 const MovieDetails = () => {
   const { id } = useParams();
@@ -39,7 +40,7 @@ const MovieDetails = () => {
       
       try {
         validateSelection({ tmdbId: id, mediaType: 'movie' });
-        const movieDetailUrl = `https://api.themoviedb.org/3/movie/${id}?api_key=8f666adc99ee1f6168974514ff6d951a`;
+        const movieDetailUrl = tmdbUrl(`movie/${id}`);
         const response = await fetch(movieDetailUrl, { signal: controller.signal });
         
         if (!response.ok) {
@@ -50,14 +51,8 @@ const MovieDetails = () => {
         if (!active) return;
         if (Number(data.id) !== Number(id)) throw new Error('Movie information does not match the selected movie. Please reload and try again.');
         setMovieDetails(data);
-        setPosterPath(data.poster_path 
-          ? `https://image.tmdb.org/t/p/w780${data.poster_path}`
-          : 'https://placehold.co/780x1170/2a2a2a/FFFFFF?text=No+Poster+Available'
-        );
-        setBackDrop(data.backdrop_path 
-          ? `https://image.tmdb.org/t/p/original/${data.backdrop_path}`
-          : ''
-        );
+        setPosterPath(tmdbPoster(data.poster_path, 'w780'));
+        setBackDrop(data.backdrop_path ? tmdbPoster(data.backdrop_path, 'original') : '');
 
         // Check if movie is public domain via PHP API
         try {
@@ -70,11 +65,11 @@ const MovieDetails = () => {
           }
         } catch (error) {
           if (!active || error.name === 'AbortError') return;
-          console.log('Public domain check failed (backend may not be running):', error);
+          console.error('Public domain check failed (backend may not be running):', error);
         }
 
         // Fetch watch providers
-        const watchProvidersUrl = `https://api.themoviedb.org/3/movie/${id}/watch/providers?api_key=8f666adc99ee1f6168974514ff6d951a`;
+        const watchProvidersUrl = tmdbUrl(`movie/${id}/watch/providers`);
         const providersResponse = await fetch(watchProvidersUrl, { signal: controller.signal });
         if (providersResponse.ok) {
           const providersData = await providersResponse.json();
@@ -87,7 +82,7 @@ const MovieDetails = () => {
         }
 
         // Fetch similar movies
-        const similarMoviesUrl = `https://api.themoviedb.org/3/movie/${id}/similar?api_key=8f666adc99ee1f6168974514ff6d951a`;
+        const similarMoviesUrl = tmdbUrl(`movie/${id}/similar`);
         const similarResponse = await fetch(similarMoviesUrl, { signal: controller.signal });
         if (similarResponse.ok) {
           const similarData = await similarResponse.json();
@@ -96,7 +91,7 @@ const MovieDetails = () => {
         }
 
         // Fetch recommended movies
-        const recommendedMoviesUrl = `https://api.themoviedb.org/3/movie/${id}/recommendations?api_key=8f666adc99ee1f6168974514ff6d951a`;
+        const recommendedMoviesUrl = tmdbUrl(`movie/${id}/recommendations`);
         const recommendedResponse = await fetch(recommendedMoviesUrl, { signal: controller.signal });
         if (recommendedResponse.ok) {
           const recommendedData = await recommendedResponse.json();

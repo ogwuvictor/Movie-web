@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { tmdbUrl } from '../utils/tmdbConfig';
 
 const GenreDropdownPortal = () => {
   const [genres, setGenres] = useState([]);
@@ -10,7 +11,7 @@ const GenreDropdownPortal = () => {
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const apiUrl = 'https://api.themoviedb.org/3/genre/movie/list?language=en&api_key=8f666adc99ee1f6168974514ff6d951a';
+        const apiUrl = tmdbUrl('genre/movie/list', { language: 'en' });
         const response = await fetch(apiUrl);
         
         if (!response.ok) {

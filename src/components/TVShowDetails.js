@@ -5,6 +5,7 @@ import { processProviders, generateRedirectUrl } from '../utils/providerLinkServ
 import StreamingModal from './StreamingModal';
 import TitleCommunity from './TitleCommunity';
 import './SeriesBrowser.css';
+import { tmdbUrl, tmdbPoster } from '../utils/tmdbConfig';
 
 const TVShowDetails = () => {
   const { id } = useParams();
@@ -50,7 +51,7 @@ const TVShowDetails = () => {
     }
     setLoadingSeason(true);
     try {
-      const seasonUrl = `https://api.themoviedb.org/3/tv/${id}/season/${seasonNumber}?api_key=8f666adc99ee1f6168974514ff6d951a`;
+      const seasonUrl = tmdbUrl(`tv/${id}/season/${seasonNumber}`);
       const response = await fetch(seasonUrl);
       
       if (!response.ok) throw new Error('Episodes unavailable');
@@ -82,7 +83,7 @@ const TVShowDetails = () => {
       setLoading(true);
       
       try {
-        const tvDetailUrl = `https://api.themoviedb.org/3/tv/${id}?api_key=8f666adc99ee1f6168974514ff6d951a&language=en-US`;
+        const tvDetailUrl = tmdbUrl(`tv/${id}`, { language: 'en-US' });
         const response = await fetch(tvDetailUrl);
         
         if (!response.ok) {
@@ -99,17 +100,11 @@ const TVShowDetails = () => {
           const firstSeasonNumber = data.seasons[0].season_number;
           fetchSeasonEpisodes(firstSeasonNumber, true);
         }
-        setPosterPath(data.poster_path 
-          ? `https://image.tmdb.org/t/p/w780${data.poster_path}`
-          : 'https://placehold.co/780x1170/2a2a2a/FFFFFF?text=No+Poster+Available'
-        );
-        setBackDrop(data.backdrop_path 
-          ? `https://image.tmdb.org/t/p/original/${data.backdrop_path}`
-          : ''
-        );
+        setPosterPath(tmdbPoster(data.poster_path, 'w780'));
+        setBackDrop(data.backdrop_path ? tmdbPoster(data.backdrop_path, 'original') : '');
 
         // Fetch watch providers for TV
-        const watchProvidersUrl = `https://api.themoviedb.org/3/tv/${id}/watch/providers?api_key=8f666adc99ee1f6168974514ff6d951a`;
+        const watchProvidersUrl = tmdbUrl(`tv/${id}/watch/providers`);
         const providersResponse = await fetch(watchProvidersUrl);
         if (providersResponse.ok) {
           const providersData = await providersResponse.json();
@@ -121,7 +116,7 @@ const TVShowDetails = () => {
         }
 
         // Fetch similar TV shows
-        const similarTVShowsUrl = `https://api.themoviedb.org/3/tv/${id}/similar?api_key=8f666adc99ee1f6168974514ff6d951a`;
+        const similarTVShowsUrl = tmdbUrl(`tv/${id}/similar`);
         const similarTVResponse = await fetch(similarTVShowsUrl);
         if (similarTVResponse.ok) {
           const similarTVData = await similarTVResponse.json();
@@ -129,7 +124,7 @@ const TVShowDetails = () => {
         }
 
         // Fetch recommended TV shows
-        const recommendedTVShowsUrl = `https://api.themoviedb.org/3/tv/${id}/recommendations?api_key=8f666adc99ee1f6168974514ff6d951a`;
+        const recommendedTVShowsUrl = tmdbUrl(`tv/${id}/recommendations`);
         const recommendedTVResponse = await fetch(recommendedTVShowsUrl);
         if (recommendedTVResponse.ok) {
           const recommendedTVData = await recommendedTVResponse.json();

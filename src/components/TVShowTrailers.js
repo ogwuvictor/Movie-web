@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { tmdbUrl } from '../utils/tmdbConfig';
 
 const TVShowTrailers = () => {
   const { id } = useParams();
@@ -13,8 +14,8 @@ const TVShowTrailers = () => {
     const loadTVShowTrailers = async () => {
       try {
         // Fetch TV show details with timeout
-        const tvDetailUrl = `https://api.themoviedb.org/3/tv/${id}?api_key=8f666adc99ee1f6168974514ff6d951a`;
-        const tvVideosUrl = `https://api.themoviedb.org/3/tv/${id}/videos?api_key=8f666adc99ee1f6168974514ff6d951a`;
+        const tvDetailUrl = tmdbUrl(`tv/${id}`);
+        const tvVideosUrl = tmdbUrl(`tv/${id}/videos`);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const API = 'https://api.themoviedb.org/3';
-const API_KEY = '8f666adc99ee1f6168974514ff6d951a';
+import { TMDB_API_BASE as API, TMDB_API_KEY as API_KEY } from '../utils/tmdbConfig';
 
 export default function useGenreCatalog(mediaType, genreId) {
   const [items, setItems] = useState([]);

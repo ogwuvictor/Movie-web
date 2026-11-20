@@ -1,26 +1,7 @@
 import React from 'react'
 import Hero from './Hero';
-import Trending from './Trending';
-import NowPlaying from './nowplaying';
-import PopularMovie from './popularmovie';
-import TopRated from './Toprated';
-import UpComing from './Upcoming';
-import Anime from './Anime';
-import AnimeTV from './AnimeTV';
-import PopularTVShows from './PopularTVShows';
-import AiringToday from './AiringToday';
-import OnTheAir from './OnTheAir';
-import TopRatedTVShows from './TopRatedTVShows';
+import MediaRow from './MediaRow';
 import GenreSelector from './GenreSelector';
-import TurkishDrama from './TurkishDrama';
-import AdventureMovies from './AdventureMovies';
-import TeenRomance from './TeenRomance';
-import HorrorMovies from './HorrorMovies';
-import ActionMovies from './ActionMovies';
-import CDrama from './CDrama';
-import KDrama from './KDrama';
-import SADrama from './SADrama';
-import NollywoodMovies from './NollywoodMovies';
 import './Home.css';
 
 /**
@@ -53,31 +34,31 @@ const Home = ({title}) => {
                 <div className="section-header">
                     <h3 className="section-title">Trending 🔥</h3>
                 </div>
-                <Trending />
+                <MediaRow endpoint="trending/movie/day" label="trending movies" />
                 
                 {/* 2. Now Playing */}
                 <div className="section-header">
                     <h3 className="section-title">Now Playing</h3>
                 </div>
-                <NowPlaying />
+                <MediaRow endpoint="movie/now_playing" label="now playing movies" />
                 
                 {/* 3. Popular Movies */}
                 <div className="section-header">
                     <h3 className="section-title">Popular Movies</h3>
                 </div>
-                <PopularMovie />
+                <MediaRow endpoint="movie/popular" label="popular movies" />
                 
                 {/* 4. Top Rated Movies */}
                 <div className="section-header">
                     <h3 className="section-title">Top Rated Movies</h3>
                 </div>
-                <TopRated />
+                <MediaRow endpoint="movie/top_rated" label="top rated movies" />
                 
                 {/* 5. Upcoming */}
                 <div className="section-header">
                     <h3 className="section-title">Upcoming</h3>
                 </div>
-                <UpComing />
+                <MediaRow endpoint="movie/upcoming" label="upcoming movies" />
                 
                 {/* ===========================================
                     🎨 ANIME SECTION
@@ -90,13 +71,13 @@ const Home = ({title}) => {
                 <div className="section-header">
                     <h3 className="section-title">Popular Anime</h3>
                 </div>
-                <Anime />
+                <MediaRow endpoint="discover/movie" query="with_genres=16&with_original_language=ja&sort_by=popularity.desc" label="anime movies" />
                 
                 {/* 7. Anime TV Series */}
                 <div className="section-header">
                     <h3 className="section-title">Anime TV Series</h3>
                 </div>
-                <AnimeTV />
+                <MediaRow endpoint="discover/tv" query="with_genres=16&with_original_language=ja&sort_by=popularity.desc" mediaType="tv" label="anime TV series" />
                 
                 {/* ===========================================
                     📺 TV SHOWS SECTION
@@ -109,25 +90,25 @@ const Home = ({title}) => {
                 <div className="section-header">
                     <h3 className="section-title">Popular TV Shows</h3>
                 </div>
-                <PopularTVShows />
+                <MediaRow endpoint="tv/popular" mediaType="tv" label="popular TV shows" />
                 
                 {/* 9. Airing Today */}
                 <div className="section-header">
                     <h3 className="section-title">Airing Today</h3>
                 </div>
-                <AiringToday />
+                <MediaRow endpoint="tv/airing_today" mediaType="tv" label="TV shows airing today" />
                 
                 {/* 10. On The Air */}
                 <div className="section-header">
                     <h3 className="section-title">On The Air</h3>
                 </div>
-                <OnTheAir />
+                <MediaRow endpoint="tv/on_the_air" mediaType="tv" label="TV shows on the air" />
                 
                 {/* 11. Top Rated TV Shows */}
                 <div className="section-header">
                     <h3 className="section-title">Top Rated TV Shows</h3>
                 </div>
-                <TopRatedTVShows />
+                <MediaRow endpoint="tv/top_rated" mediaType="tv" label="top rated TV shows" />
                 
                 {/* ===========================================
                     🎬 GENRE & REGIONAL SECTION
@@ -140,55 +121,55 @@ const Home = ({title}) => {
                 <div className="section-header">
                     <h3 className="section-title">Turkish Drama</h3>
                 </div>
-                <TurkishDrama />
+                <MediaRow endpoint="discover/tv" query="with_original_language=tr&sort_by=popularity.desc" mediaType="tv" label="Turkish dramas" />
                 
                 {/* 13. Adventure Movies */}
                 <div className="section-header">
                     <h3 className="section-title">Adventure Movies</h3>
                 </div>
-                <AdventureMovies />
+                <MediaRow endpoint="discover/movie" query="with_genres=12&sort_by=popularity.desc" label="adventure movies" />
                 
                 {/* 14. Teen Romance */}
                 <div className="section-header">
                     <h3 className="section-title">💓 Teen Romance 💓</h3>
                 </div>
-                <TeenRomance />
+                <MediaRow endpoint="discover/movie" query="with_genres=10749&sort_by=popularity.desc" label="teen romance movies" />
                 
                 {/* 15. Horror Movies */}
                 <div className="section-header">
                     <h3 className="section-title">Horror Movies</h3>
                 </div>
-                <HorrorMovies />
+                <MediaRow endpoint="discover/movie" query="with_genres=27&sort_by=popularity.desc" label="horror movies" />
                 
                 {/* 16. Action Movies */}
                 <div className="section-header">
                     <h3 className="section-title">Action Movies</h3>
                 </div>
-                <ActionMovies />
+                <MediaRow endpoint="discover/movie" query="with_genres=28&sort_by=popularity.desc" label="action movies" />
                 
                 {/* 17. C-Drama */}
                 <div className="section-header">
                     <h3 className="section-title">C-Drama</h3>
                 </div>
-                <CDrama />
+                <MediaRow endpoint="discover/tv" query="with_original_language=zh&sort_by=popularity.desc" mediaType="tv" label="C-Dramas" />
                 
                 {/* 18. K-Drama */}
                 <div className="section-header">
                     <h3 className="section-title">K-Drama</h3>
                 </div>
-                <KDrama />
+                <MediaRow endpoint="discover/tv" query="with_original_language=ko&sort_by=popularity.desc" mediaType="tv" label="K-Dramas" />
                 
                 {/* 19. SA Drama */}
                 <div className="section-header">
                     <h3 className="section-title">SA Drama</h3>
                 </div>
-                <SADrama />
+                <MediaRow endpoint="discover/tv" query="with_origin_country=ZA&sort_by=popularity.desc" mediaType="tv" label="SA Dramas" />
                 
                 {/* 20. Nollywood Movies */}
                 <div className="section-header">
                     <h3 className="section-title">Nollywood Movies</h3>
                 </div>
-                <NollywoodMovies />
+                <MediaRow endpoint="discover/movie" query="with_origin_country=NG&sort_by=popularity.desc" label="Nollywood movies" />
             </div>
         </div>
      );
