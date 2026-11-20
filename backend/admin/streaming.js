@@ -4,7 +4,7 @@
     const rows = document.getElementById('catalogRows');
     const message = document.getElementById('catalogMessage');
     const fields = { id: document.getElementById('catalogTmdbId'), title: document.getElementById('catalogTitle'), available: document.getElementById('catalogAvailable'), minutes: document.getElementById('catalogValidity'), confirmed: document.getElementById('catalogConfirmed') };
-    const names = { vidlink: 'VidLink Pro', videasy: 'Videasy', vidfast: 'Vidfast', movies111: '111Movies' };
+    const names = { vidlink: 'VidLink Pro', vidfast: 'Vidfast', movies111: '111Movies', vidsrcme: 'VidSrc.me', '2embed': '2Embed' };
     let loadVersion = 0;
     const notify = (text, failed = false) => { message.textContent = text; message.className = `alert ${failed ? 'alert-danger' : 'alert-success'} mb-3`; };
     const date = value => Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString() : 'Unknown';

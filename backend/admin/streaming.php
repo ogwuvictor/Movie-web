@@ -34,7 +34,7 @@ $csrf = securityCsrf();
                 <div class="col-sm-6"><label for="catalogValidity" class="form-label">Confirmation expires after</label><select id="catalogValidity" class="form-select"><option value="15">15 minutes</option><option value="60" selected>1 hour</option><option value="360">6 hours</option><option value="1440">24 hours</option></select></div>
             </div>
             <fieldset class="mb-3"><legend class="fs-6">Streaming servers</legend>
-                <?php foreach (['vidlink' => 'VidLink Pro', 'videasy' => 'Videasy', 'vidfast' => 'Vidfast', 'movies111' => '111Movies'] as $id => $name): ?>
+                <?php foreach (['vidlink' => 'VidLink Pro', 'vidfast' => 'Vidfast', 'movies111' => '111Movies', 'vidsrcme' => 'VidSrc.me', '2embed' => '2Embed'] as $id => $name): ?>
                     <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="catalogServer" value="<?= $id ?>" id="catalog-<?= $id ?>"><label class="form-check-label" for="catalog-<?= $id ?>"><?= $name ?></label></div>
                 <?php endforeach; ?>
             </fieldset>

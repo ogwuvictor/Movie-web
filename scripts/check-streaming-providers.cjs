@@ -5,7 +5,7 @@ const { request } = require(process.env.PLAYWRIGHT_MODULE || path.join(os.tmpdir
   const client = await request.newContext({ timeout: 15000 });
   try {
     await Promise.all([
-      ['VidLink', 'https://vidlink.pro'], ['Videasy', 'https://player.videasy.net'],
+      ['VidLink', 'https://vidlink.pro'], ['VidSrc.me', 'https://vidsrc.me'],
       ['Vidfast', 'https://vidfast.pro'], ['111Movies', 'https://111movies.net'],
     ].map(async ([provider, origin]) => {
       for (const suffix of ['/movie/550', '/tv/1399/2/3']) {

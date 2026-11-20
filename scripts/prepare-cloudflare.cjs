@@ -21,7 +21,7 @@ login = login.replace(/<\?php if \(\$error\): \?>[\s\S]*?<\?php endif; \?>/, '__
   .replace('name="username" required', 'name="username" autocomplete="username" maxlength="254" required')
   .replace('name="password" required', 'name="password" autocomplete="current-password" maxlength="128" required');
 let streaming = clean(read('backend/admin/streaming.php').replace(/^<\?php[\s\S]*?\?>/, ''));
-streaming = streaming.replace(/<\?php foreach \([\s\S]*?<\?php endforeach; \?>/, Object.entries({ vidlink: 'VidLink Pro', videasy: 'Videasy', vidfast: 'Vidfast', movies111: '111Movies' }).map(([id, name]) => `<div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="catalogServer" value="${id}" id="catalog-${id}"><label class="form-check-label" for="catalog-${id}">${name}</label></div>`).join(''));
+streaming = streaming.replace(/<\?php foreach \([\s\S]*?<\?php endforeach; \?>/, Object.entries({ vidlink: 'VidLink Pro', vidfast: 'Vidfast', movies111: '111Movies', vidsrcme: 'VidSrc.me', '2embed': '2Embed' }).map(([id, name]) => `<div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="catalogServer" value="${id}" id="catalog-${id}"><label class="form-check-label" for="catalog-${id}">${name}</label></div>`).join(''));
 for (const html of [dashboard, streaming, login]) if (html.includes('<?')) throw Error('Unconverted PHP in admin template');
 fs.mkdirSync(path.join(root, 'cloudflare/generated'), { recursive: true });
 fs.writeFileSync(path.join(root, 'cloudflare/generated/admin.mjs'), `// Generated from existing PHP admin markup; do not edit.\nexport const login = ${JSON.stringify(login)};

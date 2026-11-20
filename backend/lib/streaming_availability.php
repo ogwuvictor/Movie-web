@@ -32,9 +32,9 @@ function validateStreamingRecord($input) {
     if (!isset($input['available']) || !is_bool($input['available'])) {
         throw new InvalidArgumentException('Availability must be true or false.');
     }
-    $allowed = ['vidlink', 'videasy', 'vidfast', 'movies111'];
+    $allowed = ['vidlink', 'vidfast', 'movies111', 'vidsrcme', '2embed'];
     $servers = $input['serverIds'] ?? [];
-    if (!is_array($servers) || count($servers) > 4 || array_filter($servers, function ($id) use ($allowed) { return !is_string($id) || !in_array($id, $allowed, true); })) {
+    if (!is_array($servers) || count($servers) > 8 || array_filter($servers, function ($id) use ($allowed) { return !is_string($id) || !in_array($id, $allowed, true); })) {
         throw new InvalidArgumentException('Select valid streaming servers.');
     }
     $servers = array_values(array_unique($servers));

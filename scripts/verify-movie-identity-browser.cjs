@@ -25,7 +25,7 @@ const { chromium } = require(path.join(os.tmpdir(), 'moviesync-browser-tools/nod
         } else await route.fulfill({ json: pathname.includes('/genre/') ? { genres: [] } : { results: [] } });
       });
       await context.route('**/localhost:8000/**', route => route.fulfill({ json: { success: true, is_public_domain: false } }));
-      for (const host of ['vidlink.pro', 'player.videasy.net', 'vidfast.pro', '111movies.net']) {
+      for (const host of ['vidlink.pro', 'vidsrc.me', 'vidfast.pro', '111movies.net']) {
         await context.route(`https://${host}/**`, route => route.fulfill({ contentType: 'text/html', body: '<p>Movie ID integration fixture. No provider movie playback claimed.</p>' }));
       }
       const page = await context.newPage();
@@ -46,7 +46,7 @@ const { chromium } = require(path.join(os.tmpdir(), 'moviesync-browser-tools/nod
       const selector = page.getByRole('group', { name: 'Streaming server' });
       for (const [server, expected] of [
         ['vidlink', 'https://vidlink.pro/movie/551'],
-        ['videasy', 'https://player.videasy.net/movie/551'],
+        ['vidsrcme', 'https://vidsrc.me/embed/movie/551'],
         ['vidfast', 'https://vidfast.pro/movie/551?autoPlay=true&title=false&hideServer=true'],
         ['movies111', 'https://111movies.net/movie/551'],
       ]) {

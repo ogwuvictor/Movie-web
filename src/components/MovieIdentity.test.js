@@ -37,8 +37,8 @@ test('late metadata for a previous movie cannot replace the new title or its str
   expect(screen.queryByRole('heading', { name: 'Movie 550', exact: true })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: /Watch Now/ }));
   expect(screen.getByTitle('Movie 551')).toHaveAttribute('src', 'https://vidlink.pro/movie/551');
-  fireEvent.click(screen.getByRole('radio', { name: 'Videasy' }));
-  expect(screen.getByTitle('Movie 551')).toHaveAttribute('src', 'https://player.videasy.net/movie/551');
+  fireEvent.click(screen.getByRole('radio', { name: 'Vidfast' }));
+  expect(screen.getByTitle('Movie 551')).toHaveAttribute('src', 'https://vidfast.pro/movie/551?autoPlay=true&title=false&hideServer=true');
 });
 
 test('changing movies unmounts the previous player before the new metadata arrives', async () => {

@@ -2,9 +2,10 @@ import { buildStreamUrl, getPlaybackSources, STREAMING_SERVERS, validateSelectio
 
 const patterns = [
   ['vidlink', 'https://vidlink.pro/movie/550', 'https://vidlink.pro/tv/1399/2/3'],
-  ['videasy', 'https://player.videasy.net/movie/550', 'https://player.videasy.net/tv/1399/2/3'],
   ['vidfast', 'https://vidfast.pro/movie/550?autoPlay=true&title=false&hideServer=true', 'https://vidfast.pro/tv/1399/2/3?autoPlay=true&title=false&hideServer=true'],
   ['movies111', 'https://111movies.net/movie/550', 'https://111movies.net/tv/1399/2/3'],
+  ['vidsrcme', 'https://vidsrc.me/embed/movie/550', 'https://vidsrc.me/embed/tv/1399/2/3'],
+  ['2embed', 'https://2embed.cc/embed/550', 'https://2embed.cc/embedtv/1399&s=2&e=3'],
 ];
 test.each(patterns)('%s preserves movie and episode URL patterns', (serverId, movie, tv) => {
   expect(buildStreamUrl({ serverId, tmdbId: '550' })).toBe(movie);
@@ -26,10 +27,10 @@ test('rejects unknown media types and servers', () => {
 test.each(['http://example.com/video', 'javascript:alert(1)', 'https://user:secret@example.com/video'])('rejects unsafe stream URL %s', url => {
   expect(() => buildStreamUrl({ serverId: 'custom', tmdbId: 1, servers: [{ id: 'custom', buildUrl: () => url }] })).toThrow();
 });
-test('explicit opt-in enables the four unverified providers without enabling the demo', () => {
-  expect(STREAMING_SERVERS).toHaveLength(5);
+test('explicit opt-in enables the five unverified providers without enabling the demo', () => {
+  expect(STREAMING_SERVERS).toHaveLength(6);
   const enabled = getPlaybackSources({ tmdbId: 550 });
-  expect(enabled.map(server => server.id)).toEqual(['vidlink', 'videasy', 'vidfast', 'movies111']);
+  expect(enabled.map(server => server.id)).toEqual(['vidlink', 'vidfast', 'movies111', 'vidsrcme', '2embed']);
   expect(enabled.every(server => !server.verified && server.allowUnverified)).toBe(true);
   const servers = [{ id: 'owned', enabled: true, verified: true, supports: ({ tmdbId }) => tmdbId === 550 }];
   expect(getPlaybackSources({ tmdbId: 550 }, servers)).toEqual(servers);

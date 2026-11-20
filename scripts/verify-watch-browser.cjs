@@ -20,7 +20,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(os.tmpdi
       });
       await context.route('**/localhost:8000/**', route => route.fulfill({ json: { success: true, is_public_domain: false } }));
       // Mock embed documents to test app wiring, not third-party movie playback.
-      for (const host of ['vidlink.pro', 'player.videasy.net', 'vidfast.pro', '111movies.net']) {
+      for (const host of ['vidlink.pro', 'vidsrc.me', 'vidfast.pro', '111movies.net']) {
         await context.route(`https://${host}/**`, route => {
           const parts = new URL(route.request().url()).pathname.split('/');
           const payload = { type: 'PLAYER_EVENT', data: { event: 'pause', mtmdbId: Number(parts[2]), mediaType: parts[1],
@@ -29,7 +29,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(os.tmpdi
           return route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Embed fixture</title><p>Provider document fixture; no video playback claimed.</p>' + report });
         });
       }
-      await context.route('**/streaming-availability.json', route => route.fulfill({ json: { movies: { 550: { available: true, serverIds: ['vidlink', 'videasy', 'vidfast', 'movies111'], checkedAt: new Date(Date.now() - 1000).toISOString(), expiresAt: new Date(Date.now() + 600000).toISOString() } } } }));
+      await context.route('**/streaming-availability.json', route => route.fulfill({ json: { movies: { 550: { available: true, serverIds: ['vidlink', 'vidsrcme', 'vidfast', 'movies111'], checkedAt: new Date(Date.now() - 1000).toISOString(), expiresAt: new Date(Date.now() + 600000).toISOString() } } } }));
       const page = await context.newPage();
       const errors = [];
       page.on('pageerror', error => errors.push(error.message));
@@ -68,7 +68,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(os.tmpdi
         assert.equal(await selector.getByRole('radio').count(), 4);
         assert.equal(await page.locator('.modal-body a[href*="/out/netflix"]').count(), 0);
         for (const [id, url] of [
-          ['vidlink', `https://vidlink.pro/${suffix}`], ['videasy', `https://player.videasy.net/${suffix}`],
+          ['vidlink', `https://vidlink.pro/${suffix}`], ['vidsrcme', `https://vidsrc.me/embed/${suffix}`],
           ['vidfast', `https://vidfast.pro/${suffix}?autoPlay=true&title=false&hideServer=true`], ['movies111', `https://111movies.net/${suffix}`],
         ]) {
           await selector.locator(`input[value="${id}"]`).locator("..").click();

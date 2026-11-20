@@ -11,7 +11,7 @@ const { chromium } = require(path.join(os.tmpdir(), 'moviesync-browser-tools/nod
       let catalog;
       let failed = false;
       let checks = 0;
-      const validRecord = () => ({ available: true, serverIds: ['videasy'], checkedAt: new Date(Date.now() - 1000).toISOString(), expiresAt: new Date(Date.now() + 60000).toISOString() });
+      const validRecord = () => ({ available: true, serverIds: ['vidsrcme'], checkedAt: new Date(Date.now() - 1000).toISOString(), expiresAt: new Date(Date.now() + 60000).toISOString() });
       await context.route('**/api.themoviedb.org/3/**', route => {
         const pathname = new URL(route.request().url()).pathname;
         const data = /\/movie\/550$/.test(pathname) ? movie : pathname.includes('/genre/') ? { genres: [] }

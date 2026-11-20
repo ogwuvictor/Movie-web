@@ -13,7 +13,7 @@ test('stays idle until explicitly started, then opens the configured provider', 
   expect(result.current.status).toBe('loading');
   expect(result.current.url).toBe('https://vidlink.pro/movie/550');
   act(() => result.current.fail());
-  expect(result.current.url).toBe('https://player.videasy.net/movie/550');
+  expect(result.current.url).toBe('https://vidfast.pro/movie/550?autoPlay=true&title=false&hideServer=true');
   act(() => result.current.switchServer('vidfast'));
   expect(result.current.source.id).toBe('vidfast');
   act(() => result.current.switchServer('movies111'));
@@ -161,7 +161,7 @@ test('VidLink duration messages require the exact iframe sender, origin and sele
   send({});
   expect(result.current.providerProgress.duration).toBe(7200);
   expect(result.current.status).toBe('playing');
-  act(() => result.current.switchServer('videasy'));
+  act(() => result.current.switchServer('vidsrcme'));
   expect(result.current.providerProgress).toBeNull();
   unmount();
   frame.remove();

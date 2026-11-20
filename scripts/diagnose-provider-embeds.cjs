@@ -8,7 +8,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(os.tmpdi
   try {
     for (const [id, url] of [
       ['vidlink', 'https://vidlink.pro/movie/10378'],
-      ['videasy', 'https://player.videasy.net/movie/10378'],
+      ['vidsrcme', 'https://vidsrc.me/embed/movie/10378'],
       ['vidfast', 'https://vidfast.pro/movie/10378?autoPlay=true&title=false&hideServer=true'],
       ['movies111', 'https://111movies.net/movie/10378'],
     ]) {

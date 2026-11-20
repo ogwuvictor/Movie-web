@@ -37,7 +37,7 @@ const seasonList = Array.from({ length: 30 }, (_, i) => ({ id: i + 1, season_num
       });
       await page.route('https://image.tmdb.org/**', route => route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jf8sAAAAASUVORK5CYII=', 'base64') }));
       await page.route('**/api/*.php*', route => route.fulfill({ json: { success: true, is_public_domain: false } }));
-      for (const host of ['vidlink.pro', 'player.videasy.net']) await page.route(`https://${host}/**`, route => route.fulfill({ contentType: 'text/html', body: '<body style="background:#000;color:#aaa;font-family:sans-serif">Controlled embed fixture</body>' }));
+      for (const host of ['vidlink.pro', 'vidsrc.me']) await page.route(`https://${host}/**`, route => route.fulfill({ contentType: 'text/html', body: '<body style="background:#000;color:#aaa;font-family:sans-serif">Controlled embed fixture</body>' }));
       await page.goto(base + '/about');
       assert.equal(await page.getByText(/Demo Statistics|sample|1M\+|500\+/i).count(), 0);
       const features = await page.locator('.about-features > div').evaluateAll(elements => elements.map(el => ({ x: el.getBoundingClientRect().x, y: el.getBoundingClientRect().y })));
@@ -70,10 +70,10 @@ const seasonList = Array.from({ length: 30 }, (_, i) => ({ id: i + 1, season_num
         }
         await page.getByRole('button', { name: /Watch Now/ }).click();
         await page.getByRole('radio', { name: 'VidLink Pro' }).waitFor({ state: 'attached' });
-        await page.getByText('Videasy', { exact: true }).click();
-        assert(await page.getByRole('radio', { name: 'Videasy' }).isChecked());
+        await page.getByText('VidSrc.me', { exact: true }).click();
+        assert(await page.getByRole('radio', { name: 'VidSrc.me' }).isChecked());
         const frame = page.getByTitle(type === 'movie' ? 'Fixture film' : 'Fixture series');
-        assert((await frame.getAttribute('src')).startsWith('https://player.videasy.net/'));
+        assert((await frame.getAttribute('src')).startsWith('https://vidsrc.me/embed/'));
         assert.equal(await frame.getAttribute('sandbox'), null);
         await page.locator('.streaming-modal').screenshot({ path: path.join(output, `player-${type}-${width}.png`) });
         await page.getByRole('button', { name: 'Close player' }).click();

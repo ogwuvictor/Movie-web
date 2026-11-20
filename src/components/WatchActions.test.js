@@ -10,7 +10,7 @@ let availabilityRecord;
 beforeEach(() => {
   hasProviders = true;
   movieOverrides = {};
-  availabilityRecord = { available: true, serverIds: ['vidlink', 'videasy'], checkedAt: new Date(Date.now() - 1000).toISOString(), expiresAt: new Date(Date.now() + 60000).toISOString() };
+  availabilityRecord = { available: true, serverIds: ['vidlink', 'vidfast'], checkedAt: new Date(Date.now() - 1000).toISOString(), expiresAt: new Date(Date.now() + 60000).toISOString() };
   window.matchMedia = jest.fn(() => ({ matches: false, addEventListener: jest.fn(), removeEventListener: jest.fn() }));
   global.fetch = jest.fn(async url => {
     let data = { results: [] };
@@ -41,8 +41,8 @@ test('Where to Watch restores provider links; Watch Now alone opens the streamin
   const player = screen.getByRole('dialog', { name: 'Watch now: Fixture film' });
   expect(within(player).queryByRole('link', { name: 'Find on Netflix' })).toBeNull();
   expect(screen.getByTitle('Fixture film')).toHaveAttribute('src', 'https://vidlink.pro/movie/550');
-  fireEvent.click(screen.getByRole('radio', { name: 'Videasy' }));
-  expect(screen.getByTitle('Fixture film')).toHaveAttribute('src', 'https://player.videasy.net/movie/550');
+  fireEvent.click(screen.getByRole('radio', { name: 'Vidfast' }));
+  expect(screen.getByTitle('Fixture film')).toHaveAttribute('src', 'https://vidfast.pro/movie/550?autoPlay=true&title=false&hideServer=true');
 });
 
 test('TV episode rows open Watch Now with series ID and exact episode, independently of provider modal', async () => {

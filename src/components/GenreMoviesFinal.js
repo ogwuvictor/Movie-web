@@ -10,16 +10,18 @@ const GenreMovies = () => {
   if (loading && !movies.length) {
     return (
       <div className="container catalog-page py-5">
-        <div className="row">
-          <div className="col-12">
-            <div className="section-header text-center">
-              <h2 className="section-title">Loading...</h2>
-              <div className="spinner-border text-primary mt-3" role="status">
-                <span className="visually-hidden">Loading movies...</span>
+        <div className="catalog-grid" role="status" aria-label="Loading movies">
+          {Array.from({ length: 12 }).map((_, index) => (
+            <div key={index} className="catalog-card skeleton-card" aria-hidden="true">
+              <div className="catalog-card-artwork skeleton-shimmer" />
+              <div className="catalog-card-info">
+                <div className="skeleton-shimmer skeleton-line" />
+                <div className="skeleton-shimmer skeleton-line skeleton-line-short" />
               </div>
             </div>
-          </div>
+          ))}
         </div>
+        <span className="visually-hidden">Loading movies...</span>
       </div>
     );
   }
@@ -64,6 +66,15 @@ const GenreMovies = () => {
             <div className="catalog-grid">
               {movies.map((movie) => (
                 <MovieCard key={movie.id} movie={movie} />
+              ))}
+              {loading && Array.from({ length: 4 }).map((_, index) => (
+                <div key={`more-${index}`} className="catalog-card skeleton-card" aria-hidden="true">
+                  <div className="catalog-card-artwork skeleton-shimmer" />
+                  <div className="catalog-card-info">
+                    <div className="skeleton-shimmer skeleton-line" />
+                    <div className="skeleton-shimmer skeleton-line skeleton-line-short" />
+                  </div>
+                </div>
               ))}
             </div>
           ) : (

@@ -15,16 +15,16 @@ const clip = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flow
       return route.fulfill({ json: /\/movie\/550$/.test(pathname) ? { id: 550, title: 'Fullscreen QA fixture', runtime: 120, genres: [], release_date: '2000-01-01', status: 'Released' } : pathname.includes('/genre/') ? { genres: [] } : { results: [] } });
     });
     await context.route('**/localhost:8000/**', route => route.fulfill({ json: { success: true, is_public_domain: false } }));
-    for (const host of ['vidlink.pro', 'player.videasy.net', 'vidfast.pro', '111movies.net']) {
+    for (const host of ['vidlink.pro', 'vidsrc.me', 'vidfast.pro', '111movies.net']) {
       await context.route(`https://${host}/**`, route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><head><style>html,body{margin:0;width:100%;height:100%;background:#000;overflow:hidden}video{width:100%;height:100%;object-fit:contain}button{position:absolute;top:8px;left:8px;z-index:2;min-height:44px}</style></head><body><video src="${clip}" controls playsinline loop preload="auto"></video><button onclick="document.querySelector('video').play();document.documentElement.requestFullscreen()">Expand fullscreen</button></body></html>` }));
     }
-    await context.route('**/streaming-availability.json', route => route.fulfill({ json: { movies: { 550: { available: true, serverIds: ['vidlink', 'videasy', 'vidfast', 'movies111'], checkedAt: new Date(Date.now() - 1000).toISOString(), expiresAt: new Date(Date.now() + 600000).toISOString() } } } }));
+    await context.route('**/streaming-availability.json', route => route.fulfill({ json: { movies: { 550: { available: true, serverIds: ['vidlink', 'vidsrcme', 'vidfast', 'movies111'], checkedAt: new Date(Date.now() - 1000).toISOString(), expiresAt: new Date(Date.now() + 600000).toISOString() } } } }));
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('http://127.0.0.1:4175/moviedetails/550');
     await page.getByRole('button', { name: /Watch Now/ }).click();
-    for (const provider of ['vidlink', 'videasy', 'vidfast', 'movies111']) {
+    for (const provider of ['vidlink', 'vidsrcme', 'vidfast', 'movies111']) {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.locator(`.streaming-server-option input[value="${provider}"]`).locator("..").click();
       const iframe = page.locator('.streaming-viewport iframe');

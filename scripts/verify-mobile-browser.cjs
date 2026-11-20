@@ -27,7 +27,7 @@ const genres = Array.from({ length: 19 }, (_, i) => ({ id: i === 0 ? 28 : 100 + 
       await context.route('**/localhost:8000/**', route => route.fulfill({ json: { success: true, is_public_domain: false } }));
       await context.route('https://image.tmdb.org/**', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="342" height="513"><rect width="342" height="513" fill="#263747"/><circle cx="171" cy="190" r="95" fill="#4c6b75"/><text x="48" y="380" font-family="sans-serif" font-size="32" fill="white">Movie poster</text></svg>' }));
       await context.route('https://vidlink.pro/**', route => route.fulfill({ contentType: 'text/html', body: '<p>Player layout fixture; no playback claimed.</p>' }));
-      await context.route('**/streaming-availability.json', route => route.fulfill({ json: { movies: { 550: { available: true, serverIds: ['vidlink', 'videasy', 'vidfast', 'movies111'], checkedAt: new Date(Date.now() - 1000).toISOString(), expiresAt: new Date(Date.now() + 600000).toISOString() } } } }));
+      await context.route('**/streaming-availability.json', route => route.fulfill({ json: { movies: { 550: { available: true, serverIds: ['vidlink', 'vidsrcme', 'vidfast', 'movies111'], checkedAt: new Date(Date.now() - 1000).toISOString(), expiresAt: new Date(Date.now() + 600000).toISOString() } } } }));
       const page = await context.newPage();
       const errors = [];
       page.on('pageerror', error => errors.push(error.message));

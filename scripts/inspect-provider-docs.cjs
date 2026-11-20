@@ -4,7 +4,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(os.tmpdi
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
   try {
-    for (const url of ['https://vidfast.vc/', 'https://docs.videasy.net/', 'https://videasy.net/']) {
+    for (const url of ['https://vidfast.vc/', 'https://vidsrc.me/', 'https://vidlink.pro/']) {
       const page = await browser.newPage();
       try {
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 });

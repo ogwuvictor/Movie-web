@@ -51,7 +51,7 @@ const id = '9007199254740000'; // Synthetic QA record, never a real TMDB title.
     await page.getByRole('button', { name: 'Edit ' + record.title, exact: true }).click();
     assert.equal(await page.getByLabel('I have confirmed', { exact: false }).isChecked(), false);
     await page.getByLabel('Movie title', { exact: true }).fill(record.title + ' edited');
-    await page.getByLabel('Videasy', { exact: true }).check();
+    await page.getByLabel('VidSrc.me', { exact: true }).check();
     await page.getByRole('button', { name: 'Save availability', exact: true }).click();
     await page.getByRole('button', { name: 'Edit ' + record.title + ' edited', exact: true }).waitFor();
     await page.setViewportSize({ width: 390, height: 844 });

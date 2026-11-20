@@ -2,11 +2,11 @@ import { isMovieReleased, readMovieAvailability } from './movieAvailability';
 
 const now = new Date(2026, 9, 23, 12);
 const movie = { id: 550, status: 'Released', release_date: '2000-01-01' };
-const record = { available: true, serverIds: ['vidlink', 'videasy'], checkedAt: new Date(now.getTime() - 1000).toISOString(), expiresAt: new Date(now.getTime() + 60000).toISOString() };
+const record = { available: true, serverIds: ['vidlink', 'vidfast'], checkedAt: new Date(now.getTime() - 1000).toISOString(), expiresAt: new Date(now.getTime() + 60000).toISOString() };
 const read = (overrides = {}, selection = movie) => readMovieAvailability(selection, { movies: { 550: { ...record, ...overrides } } }, now);
 
 test('released status and a current title confirmation allow only listed enabled sources', () => {
-  expect(read()).toMatchObject({ serverIds: ['vidlink', 'videasy'] });
+  expect(read()).toMatchObject({ serverIds: ['vidlink', 'vidfast'] });
   expect(read({ serverIds: ['demo', 'missing', 'vidfast'] })?.serverIds).toEqual(['vidfast']);
 });
 

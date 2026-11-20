@@ -101,8 +101,8 @@ async function catalog(request, env, db) {
     return json({success:true,message:'Availability record removed.'});
   }
   const title=text(input.title,240);
-  if (typeof input.available !== 'boolean' || !Array.isArray(input.serverIds) || input.serverIds.length>4) throw new HttpError(422,'Invalid availability record.');
-  const serverIds=[...new Set(input.serverIds.map(id=>oneOf(id,['vidlink','videasy','vidfast','movies111'])))];
+  if (typeof input.available !== 'boolean' || !Array.isArray(input.serverIds) || input.serverIds.length>8) throw new HttpError(422,'Invalid availability record.');
+  const serverIds=[...new Set(input.serverIds.map(id=>oneOf(id,['vidlink','vidfast','movies111','vidsrcme','2embed'])))];
   const minutes=number(input.validMinutes,1440); if(minutes<1) throw new HttpError(422,'Confirmation must expire within 1 to 1440 minutes.');
   if(input.available && (!serverIds.length || input.confirmed!==true)) throw new HttpError(422,'Confirm playback on the selected servers before marking the title available.');
   const record={title,available:input.available,serverIds,checkedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+minutes*60000).toISOString()};
